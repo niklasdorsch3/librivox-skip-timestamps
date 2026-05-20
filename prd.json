@@ -1,0 +1,79 @@
+{
+  "project": "LibriVox Skip Timestamps",
+  "branchName": "ralph/initial-pipeline",
+  "description": "Initial Pipeline - Generate and publish LibriVox chapter skip timestamps as a shared JSON dataset",
+  "userStories": [
+    {
+      "id": "IS-00",
+      "title": "Setup and fixtures",
+      "doc": "docs/.scratch/00-setup-and-fixtures.md",
+      "priority": 0,
+      "passes": false,
+      "blockedBy": [],
+      "notes": ""
+    },
+    {
+      "id": "IS-01",
+      "title": "Repository module",
+      "doc": "docs/.scratch/01-repository-module.md",
+      "priority": 1,
+      "passes": false,
+      "blockedBy": ["IS-00"],
+      "notes": ""
+    },
+    {
+      "id": "IS-02",
+      "title": "Boundary detector",
+      "doc": "docs/.scratch/02-boundary-detector.md",
+      "priority": 2,
+      "passes": false,
+      "blockedBy": ["IS-00"],
+      "notes": ""
+    },
+    {
+      "id": "IS-03",
+      "title": "Audio fetcher",
+      "doc": "docs/.scratch/03-audio-fetcher.md",
+      "priority": 3,
+      "passes": false,
+      "blockedBy": ["IS-00"],
+      "notes": ""
+    },
+    {
+      "id": "IS-04",
+      "title": "Pipeline",
+      "doc": "docs/.scratch/04-pipeline.md",
+      "priority": 4,
+      "passes": false,
+      "blockedBy": ["IS-00", "IS-02", "IS-03"],
+      "notes": ""
+    },
+    {
+      "id": "IS-05",
+      "title": "Batch runner",
+      "doc": "docs/.scratch/05-batch-runner.md",
+      "priority": 5,
+      "passes": false,
+      "blockedBy": ["IS-00", "IS-01", "IS-03", "IS-04"],
+      "notes": ""
+    },
+    {
+      "id": "IS-06",
+      "title": "Verification script",
+      "doc": "docs/.scratch/06-verification-script.md",
+      "priority": 6,
+      "passes": false,
+      "blockedBy": ["IS-00", "IS-01", "IS-03"],
+      "notes": ""
+    },
+    {
+      "id": "IS-07",
+      "title": "CI validation",
+      "doc": "docs/.scratch/07-ci-validation.md",
+      "priority": 7,
+      "passes": false,
+      "blockedBy": ["IS-00", "IS-01"],
+      "notes": ""
+    }
+  ]
+}
