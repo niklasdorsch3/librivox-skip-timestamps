@@ -149,12 +149,26 @@ Does not re-run the Pipeline — only marks existing output verified.
 
 ### `.github/workflows/validate-contribution.yml` — CI check
 
-Runs on every pull request. Executes a validation script (`validate_contribution.py`) that diffs `repository.json` against the base branch and checks:
+Runs on every pull request to `main`. Executes `validate_contribution.py` which diffs `repository.json` against the base branch and posts a summary comment on the PR with:
 
-1. No more than 100 new chapter entries in this PR
-2. At least 10 of the new entries have `"verified": true`
+- Total new entries and verified count (always shown)
+- ⚠️ warning if more than 100 new entries — suggests splitting the PR
+- ⚠️ warning if fewer than 10 verified entries — suggests running more books or using `--override`
+- ✓ if both checks pass
 
-Fails the PR if either condition is not met, with a clear error message stating which rule was violated. No other checks — does not validate timestamp values or re-run the Pipeline.
+Violations are **warnings only** and do not block merge. No other checks — does not validate timestamp values or re-run the Pipeline. On re-push the bot comment is updated in-place rather than duplicated.
+
+### `validate_contribution.py` — Contribution validator
+
+Compares two `repository.json` snapshots (PR vs. base branch) and prints a Markdown summary to stdout. Pure logic module — no GitHub API calls; the workflow handles posting.
+
+Public functions:
+- `load_json(path)` — loads a repository JSON file; returns `{}` if missing or empty.
+- `find_new_chapters(pr_repo, base_repo)` — returns chapters present in `pr_repo` but absent (by `listen_url`) from `base_repo`.
+- `count_verified(chapters)` — counts chapters with `"verified": true`.
+- `build_comment(total_new, verified)` — formats the PR comment body.
+
+CLI: `python validate_contribution.py --pr-repo repository.json --base-repo /tmp/base.json`
 
 ### `repository.json` — Public Output
 
