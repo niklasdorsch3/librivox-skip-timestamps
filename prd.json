@@ -71,7 +71,7 @@
       "title": "CI validation",
       "doc": "docs/.scratch/07-ci-validation.md",
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "blockedBy": ["IS-00", "IS-01"],
       "notes": ""
     }

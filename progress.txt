@@ -3,6 +3,7 @@ Started: Wed May 20 14:43:51 UTC 2026
 ---
 
 ## Codebase Patterns
+- validate_contribution.py: pure logic module (no GitHub API); workflow captures stdout and posts it via actions/github-script; use HTML comment marker `<!-- validate-contribution -->` to find+update existing bot comment instead of duplicating
 - verify.py uses Python's built-in HTTPServer; attach session state to the server instance (`server.session = session`) so handlers access it via `self.server.session`
 - HTTPServer.shutdown() cannot be called from the handler thread (deadlock) — use `threading.Thread(target=self.server.shutdown, daemon=True).start()` instead
 - Embedded HTML in Python: use `"""..."""` triple-double-quote strings; use single-quoted JS strings inside so no escaping needed
@@ -133,4 +134,20 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Patch "main.repository.contains" and "main.repository.upsert" (not "repository.contains") since main.py imports the module
   - books.txt comment lines (starting with #) should be stripped — implemented by checking int(line.strip()) which will raise ValueError on comments; add proper filtering
   - Note: books.txt comment lines would cause ValueError in current impl — safe since contributors are instructed to use only IDs
+---
+
+## 2026-05-20 - IS-07
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created validate_contribution.py: load_json(), find_new_chapters(), count_verified(), build_comment(), main()
+- find_new_chapters: compares by listen_url; base_repo is empty dict when base branch has no repository.json
+- build_comment: no warnings for total_new==0 ("No new entries"); ⚠️ if >100 entries or <10 verified; ✓ if both pass
+- Created .github/workflows/validate-contribution.yml: runs on PR to main, extracts base repo via git show, runs script, posts/updates PR comment with HTML comment marker
+- Created tests/test_validate_contribution.py: 22 tests covering all boundary cases (100/101 entries, 10/9 verified, both warnings, no changes, load_json edge cases)
+- Updated ARCHITECTURE.md: corrected CI check description (warnings, not blocking), added validate_contribution.py module entry
+- Files changed: validate_contribution.py, tests/test_validate_contribution.py, .github/workflows/validate-contribution.yml, ARCHITECTURE.md, prd.json, progress.txt
+- **Learnings for future iterations:**
+  - Keep the validation script pure (stdout output only) — let the workflow handle GitHub API calls for easier testing
+  - Use an HTML comment marker in the PR comment body to update-in-place instead of creating duplicates
+  - `git show origin/${{ github.base_ref }}:repository.json` in the workflow + `|| echo '{}'` gracefully handles a repo with no repository.json yet
+  - When total_new == 0, skip the <10 verified warning (nothing to verify)
 ---
