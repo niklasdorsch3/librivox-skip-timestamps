@@ -32,7 +32,7 @@ When making architectural decisions, read `docs/agents/philosophy.md` first.
 
 ### Issue tracker
 
-Issues are tracked as markdown files under `docs/`. See `docs/agents/issue-tracker.md` for the full convention.
+Issues are tracked as markdown files under `.scratch/`. See `docs/agents/issue-tracker.md` for the full convention.
 
 ### Domain docs
 
