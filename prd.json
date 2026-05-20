@@ -8,7 +8,7 @@
       "title": "Setup and fixtures",
       "doc": "docs/.scratch/00-setup-and-fixtures.md",
       "priority": 0,
-      "passes": false,
+      "passes": true,
       "blockedBy": [],
       "notes": ""
     },

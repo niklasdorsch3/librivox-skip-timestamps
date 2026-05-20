@@ -1,0 +1,25 @@
+# Ralph Progress Log
+Started: Wed May 20 14:43:51 UTC 2026
+---
+
+## Codebase Patterns
+- LibriVox audio fixtures: download from archive.org with Range header (64kbps → 8KB/s, so 200KB ≈ 25s)
+- setup.py is a Python script (not shell), checks ffmpeg via shutil.which + ollama via HTTP to localhost:11434
+- `requests` is pre-installed in codespace; `pydub`, `faster-whisper`, `pydantic` are not — install via pip
+- Audio fixture is at tests/fixtures/sample_chapter.mp3 (LibriVox Art of War ch01, ~25s, contains Disclaimer)
+
+## 2026-05-20 15:00 UTC - IS-00
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created requirements.txt with faster-whisper, pydub, requests, pydantic
+- Created setup.py: checks ffmpeg (shutil.which), checks ollama (HTTP to localhost:11434/api/tags), pulls llama3.2:3b if missing
+- Downloaded LibriVox Art of War ch01 audio fixture (~25s at 64kbps) to tests/fixtures/sample_chapter.mp3
+- Created tests/fixtures/README.md documenting source URL, selection rationale, and replacement instructions
+- Updated ARCHITECTURE.md: setup.sh → setup.py
+- **Learnings for future iterations:**
+  - ffmpeg is NOT installed in the Codespace by default — setup.py correctly detects and reports this
+  - ollama is NOT running in the Codespace — setup.py correctly detects and reports this
+  - The LibriVox Art of War fixture URL: https://www.archive.org/download/art_of_war_librivox/art_of_war_01-02_sun_tzu_64kb.mp3
+  - Use Range: bytes=0-200000 to get first ~25 seconds at 64kbps
+  - LibriVox Disclaimer is typically in the first 10-15 seconds of a chapter
+  - MP3 sync bytes start at 0xFFFB (or similar) — the downloaded fixture is a valid raw MP3 (no ID3 tag)
+---
