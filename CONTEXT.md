@@ -60,7 +60,7 @@ The audio level below which a segment is classified as silence: −45 dBFS. Used
 
 ## Confidence Score
 
-A 0.0–1.0 float returned by the LLM in Stage 2 alongside the Anchor Word. Indicates how certain the model is that it found the correct Disclaimer boundary. Low-confidence results are flagged in the Repository for manual review.
+A 0.0–1.0 float returned by the LLM in Stage 2 alongside the Anchor Word. Indicates how certain the model is that it found the correct Disclaimer boundary. If confidence falls below the Confidence Threshold (configurable, default 0.5), the chapter is treated as `NoDisclaimer` — no Stage 3 processing occurs and `exact_audio_skip_seconds` is set to 0.
 
 ---
 
@@ -72,7 +72,7 @@ The entry-point script (`main.py`) that reads a flat list of LibriVox book IDs f
 
 ## Repository
 
-The output JSON file (`repository.json`) that maps LibriVox project IDs to per-chapter timestamp data. The canonical public artefact of this project. Schema:
+The output JSON file (`repository.json`) that maps LibriVox project IDs to per-chapter timestamp data. The canonical public artefact of this project. Append-only: once a chapter entry is written, it is never overwritten by the Batch Runner. If reprocessing is needed (e.g., after a model upgrade), the entry must be manually deleted first. Future versions may allow selective re-processing. Schema:
 
 ```json
 {
@@ -85,9 +85,12 @@ The output JSON file (`repository.json`) that maps LibriVox project IDs to per-c
     {
       "file_name": "art_of_war_01_sun_tzu.mp3",
       "chapter_index": 1,
+      "chapter_title": "Chapter 1: The Laying of Plans",
+      "listen_url": "https://librivox.org/...",
       "approximate_text_end": 14.21,
       "exact_audio_skip_seconds": 15.15,
       "detected_disclaimer_anchor_word": "domain",
+      "is_outlier": false,
       "verified": false
     }
   ]
@@ -104,7 +107,7 @@ A chapter entry where the difference between `approximate_text_end` (T_approx) a
 
 ## Contribution
 
-A batch of up to 100 timestamps submitted to the Repository by a contributor, via pull request. Each Contribution must include exactly 10 Verified Entries. The remaining entries are pipeline-generated and unverified.
+A batch of up to 100 timestamps submitted to the Repository by a contributor, via pull request. Each Contribution must include exactly 10 Verified Entries — 10 of the chapters the contributor generated in this run, not from any previous run. The remaining entries from this run are pipeline-generated and unverified.
 
 ---
 
@@ -129,3 +132,15 @@ A standalone script (`verify.py`) run after the Batch Runner completes. Picks 10
 ## Processing Threshold
 
 The maximum amount of audio analysed per file: 45 seconds from the start. No Disclaimer is expected to exceed this window. A safety check ensures `exact_audio_skip_seconds` never exceeds this value.
+
+---
+
+## Confidence Threshold
+
+The minimum confidence score (0.0–1.0) accepted by the Pipeline. If the LLM's confidence score falls below this threshold, the chapter is treated as `NoDisclaimer` regardless of the anchor word returned. Configurable via `CONFIDENCE_THRESHOLD` environment variable; defaults to 0.5.
+
+---
+
+## Execution Model
+
+The Batch Runner runs single-threaded per contributor. Each contributor executes one instance of `main.py` on their own machine, processing books sequentially and writing to `repository.json` atomically per chapter. Multiple contributors may have `repository.json` open and write to it, but each contributor is responsible for ensuring their own local run completes before submitting a pull request. No inter-process coordination or file-level locking is required — atomicity is achieved via temp file + rename at the individual write level.

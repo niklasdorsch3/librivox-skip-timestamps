@@ -4,7 +4,7 @@ Status: ready-for-agent
 
 A `Repository` module that owns all reads and writes to `repository.json`. Every other script in the codebase goes through this module — none of them touch the file directly.
 
-The module exposes four operations: load the full repository, upsert a chapter entry, mark an entry as verified by its `listen_url`, and check whether a `listen_url` already exists. All writes are atomic — write to a temp file then rename — so an interrupted run never corrupts the file. All entries are validated against a pydantic schema before writing. The schema matches the structure defined in the PRD: one top-level key per LibriVox project ID, each with `book_metadata` and a `chapters` array. `gutenberg_text_id` is nullable.
+The module exposes four operations: load the full repository, upsert a chapter entry, mark an entry as verified by its `listen_url`, and check whether a `listen_url` already exists. All writes are atomic — write to a temp file then rename — so an interrupted run never corrupts the file. All entries are validated against a pydantic schema before writing. The schema matches the structure defined in CONTEXT.md: one top-level key per LibriVox project ID, each with `book_metadata` and a `chapters` array. Each chapter entry requires: `file_name`, `chapter_index`, `chapter_title`, `listen_url`, `approximate_text_end`, `exact_audio_skip_seconds`, `detected_disclaimer_anchor_word` (nullable), `is_outlier`, and `verified`. `gutenberg_text_id` in book_metadata is nullable.
 
 ## Acceptance criteria
 
