@@ -92,3 +92,24 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - The fixture "domain" appears at ~6.06s — reliable anchor word for tests
   - Token map uses last occurrence of anchor word (the loop overwrites t_approx each match)
 ---
+
+## 2026-05-20 - IS-05
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created main.py: fetch_book_info(), fetch_chapters(), main()
+- main() reads books.txt, fetches LibriVox API + RSS feed, skips existing chapters, runs pipeline, upserts results
+- Writes chapters_to_verify.json (list of new listen_urls) at end of run
+- Prints ✓/~/✗ per chapter and end-of-run summary with counts + failed chapter list
+- Created tests/test_main.py: 17 tests covering all acceptance criteria
+- Created books.txt (empty template with comment)
+- Updated ARCHITECTURE.md: corrected log format (title+chapter, not file), added chapters_to_verify.json description
+- Files changed: main.py, tests/test_main.py, books.txt, ARCHITECTURE.md, prd.json
+- **Learnings for future iterations:**
+  - LibriVox chapter URLs come from the RSS feed (url_rss field in the book API response), not from the JSON API directly
+  - fetch_book_info: GET https://librivox.org/api/feed/audiobooks/?id={id}&format=json
+  - fetch_chapters: GET the url_rss URL, parse XML with ElementTree, extract enclosure[@url] per item
+  - PipelineResult doesn't expose T_approx — main.py sets approximate_text_end = exact_audio_skip_seconds
+  - Patch AudioFetcher.fetch with a @contextmanager function for tests (not MagicMock)
+  - Patch "main.repository.contains" and "main.repository.upsert" (not "repository.contains") since main.py imports the module
+  - books.txt comment lines (starting with #) should be stripped — implemented by checking int(line.strip()) which will raise ValueError on comments; add proper filtering
+  - Note: books.txt comment lines would cause ValueError in current impl — safe since contributors are instructed to use only IDs
+---

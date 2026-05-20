@@ -70,7 +70,7 @@ def main(
     book_ids = [
         int(line.strip())
         for line in books_file.read_text().splitlines()
-        if line.strip()
+        if line.strip() and not line.strip().startswith("#")
     ]
 
     total = 0
