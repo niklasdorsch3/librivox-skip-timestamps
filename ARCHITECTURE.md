@@ -194,7 +194,7 @@ pip install -r requirements.txt
 python setup.py
 ```
 
-In development, set `OLLAMA_MODEL` env var to switch models without code changes. Set `WHISPER_MODEL` to switch between `tiny` and `base`.
+In development, set `OLLAMA_MODEL` env var to switch models without code changes. Set `WHISPER_MODEL` to switch between `tiny` and `base`. Set `SILENCE_THRESHOLD_DBFS` (default `−45.0`) to tune silence detection. Set `CONFIDENCE_THRESHOLD` (default `0.5`) to tune the LLM confidence cutoff.
 
 ---
 
