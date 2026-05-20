@@ -12,6 +12,9 @@ Started: Wed May 20 14:43:51 UTC 2026
 - boundary_detector.py: inject a fake requests.Session for testing — session.post.side_effect = [mock_response, ...]; Ollama response shape is {"message": {"content": "<json string>"}}
 - BoundaryResult = Union[NoDisclaimer, AnchorWord] — use isinstance() to branch on the result type
 - audio_fetcher.py: use @staticmethod + @contextmanager on AudioFetcher.fetch(); inject session for testing; mock session.get.side_effect = [exc, ok_response] for retry tests; mock response needs raise_for_status() and iter_content()
+- analyzer.py: inject fake detector via `detector` param (default: detect_boundary); faster-whisper word.end is np.float64 — call float() on it; abs(delta) > N also yields np.bool_ — call bool() to get Python bool
+- ffmpeg not in Codespace: install static-ffmpeg via pip, call static_ffmpeg.add_paths() in tests/conftest.py (pydub calls ffmpeg/ffprobe as subprocess, so PATH must be set before any pydub import)
+- faster-whisper strips punctuation inconsistently — normalize both anchor word and token map words with re.sub(r"[^a-z0-9]+", "", w.lower()) when matching
 
 ## 2026-05-20 15:00 UTC - IS-00
 Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
@@ -70,4 +73,22 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - For retry testing: session.get.side_effect = [exception_instance, ok_response_mock]
   - Mock response for streaming: needs raise_for_status() + iter_content(chunk_size=N) returning list of bytes chunks
   - AudioFetchError is raised inside the try block (before yield), so temp file cleanup still runs via finally
+---
+
+## 2026-05-20 - IS-04
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created analyzer.py: run_pipeline(), ChapterMetadata, PipelineResult, AnchorWordNotFoundError
+- Stage 1: pydub trims to 45s → temp mp3 → faster-whisper transcribes with word_timestamps=True
+- Stage 2: injects detector fn (default detect_boundary); handles NoDisclaimer, low confidence, AnchorWordNotFoundError
+- Stage 3: pydub scans 3s window in 50ms steps for dBFS < SILENCE_THRESHOLD_DBFS
+- Created tests/conftest.py: calls static_ffmpeg.add_paths() for pydub subprocess access to ffmpeg
+- Created tests/test_analyzer.py: 8 integration tests with real audio fixture + fake detector
+- Updated ARCHITECTURE.md: added SILENCE_THRESHOLD_DBFS and CONFIDENCE_THRESHOLD env var docs
+- **Learnings for future iterations:**
+  - faster-whisper word.end is np.float64 not Python float — must cast: float(word.end)
+  - abs(np.float64 delta) > scalar also yields np.bool_ — must cast: bool(abs(delta) > N)
+  - Word matching: whisper returns "domain." with period, LLM returns "domain" — normalize both with re.sub(r"[^a-z0-9]+", "", w.lower())
+  - static_ffmpeg must be installed (pip install static-ffmpeg) and static_ffmpeg.add_paths() called before any pydub operation
+  - The fixture "domain" appears at ~6.06s — reliable anchor word for tests
+  - Token map uses last occurrence of anchor word (the loop overwrites t_approx each match)
 ---

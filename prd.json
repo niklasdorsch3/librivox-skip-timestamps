@@ -44,7 +44,7 @@
       "title": "Pipeline",
       "doc": "docs/.scratch/04-pipeline.md",
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "blockedBy": ["IS-00", "IS-02", "IS-03"],
       "notes": ""
     },
