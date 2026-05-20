@@ -2,6 +2,9 @@ PYTHON     = .venv/bin/python3
 PYTEST     = PYTHONPATH=. $(PYTHON) -m pytest
 PYTEST_ENV = PYTHONPATH=.
 
+-include .env
+export
+
 .PHONY: venv setup test run verify test-pipeline clean
 
 ## Create virtualenv and install dependencies
