@@ -32,6 +32,18 @@ Download `repository.json` and serve it from your own app. Each entry maps a Lib
 
 `exact_audio_skip_seconds` is the point at which the disclaimer ends and the literary content begins. `verified: true` means a human has listened and confirmed the timestamp.
 
+## Development
+
+See [docs/.scratch/](./docs/.scratch/) for user stories and acceptance criteria. Stories are ordered for TDD:
+
+**00 — Setup & Fixtures** (foundation)
+**01-07 — Implementation** (unit tests with mocks in Codespace; integration tests deferred)
+
+To develop in a Codespace without ffmpeg/ollama:
+- Use dependency injection and mocks for HTTP calls (Ollama, LibriVox API)
+- Mock file I/O and audio processing
+- Unit tests pass; integration tests skipped until proper environment
+
 ## Contributing
 
 ### Requirements
