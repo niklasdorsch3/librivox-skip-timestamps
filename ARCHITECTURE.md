@@ -91,6 +91,19 @@ Implements three Stages sequentially — Transcription, Boundary Analysis, Silen
 - Enforces safety checks: `exact_audio_skip_seconds` ≤ 45 s; Outlier flagged if |T_exact − T_approx| > 4 s.
 - Upserts the chapter entry into `repository.json`.
 
+### `repository.py` — Repository Module
+
+Owns all reads and writes to `repository.json`. No other module touches the file directly. Exposes four operations:
+
+- `load(path)` — returns the full repository dict; empty dict if file doesn't exist.
+- `upsert(entry, path)` — validates `entry` via pydantic (`UpsertPayload` → `BookMetadata` + `ChapterEntry`), then adds or updates the matching chapter (by `listen_url`) within its project-ID bucket.
+- `mark_verified(listen_url, path)` — sets `verified: true` on the matching chapter entry.
+- `contains(listen_url, path)` — returns `True` if the chapter already exists.
+
+All writes go through `_atomic_write`: data is serialised to a temp file in the same directory, then `os.replace`d into place. An interrupted run never corrupts the file. The temp file is cleaned up on failure.
+
+---
+
 ### `verify.py` — Verification Script
 
 Run after `main.py` completes. Picks 10 chapters at random from the new batch output and walks the contributor through each one interactively:
