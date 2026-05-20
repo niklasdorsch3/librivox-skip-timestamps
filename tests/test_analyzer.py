@@ -97,7 +97,7 @@ def test_log_line_emitted_with_t_approx_and_t_exact(meta, caplog):
         run_pipeline(FIXTURE, meta, detector=disclaimer)
 
     log_messages = [r.message for r in caplog.records]
-    assert any("t_approx" in m and "t_exact" in m and "delta" in m for m in log_messages)
+    assert any("t_ref" in m and "t_exact" in m and "delta" in m for m in log_messages)
 
 
 def test_outlier_flag_set_when_delta_exceeds_four_seconds(meta, monkeypatch):

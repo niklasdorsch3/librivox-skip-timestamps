@@ -21,6 +21,8 @@ _MAX_AUDIO_SECONDS = 45
 _SILENCE_WINDOW_MS = 3000
 _SILENCE_STEP_MS = 50
 _OUTLIER_DELTA_SECONDS = 4.0
+_CHAPTER_HEADING_WINDOW_SECONDS = 8.0
+_CHAPTER_HEADING_PATTERN = re.compile(r"^(chapter|part|book|prologue|epilogue|preface|introduction)$")
 
 TokenMap = list[tuple[str, float]]
 DetectorFn = Callable[[str], BoundaryResult]
@@ -90,15 +92,20 @@ def run_pipeline(
             f"Anchor word '{boundary.word}' not found in Token Map"
         )
 
-    # Stage 3: Silence Detection
-    t_exact = _detect_silence(audio_path, t_approx, silence_threshold)
+    # Stage 2b: if a chapter heading follows, scan for silence just before it
+    t_chapter_end = _find_chapter_heading_end(token_map, t_approx)
+    if t_chapter_end is not None:
+        t_exact = _detect_silence_before(audio_path, t_chapter_end, silence_threshold)
+    else:
+        t_exact = _detect_silence(audio_path, t_approx, silence_threshold)
 
-    delta = t_exact - t_approx
+    t_ref = t_chapter_end if t_chapter_end is not None else t_approx
+    delta = t_exact - t_ref
     is_outlier = bool(abs(delta) > _OUTLIER_DELTA_SECONDS)
     outlier_tag = " [OUTLIER]" if is_outlier else ""
     logger.info(
-        "t_approx: %.2fs  t_exact: %.2fs  delta: %+.2fs%s",
-        t_approx,
+        "t_ref: %.2fs  t_exact: %.2fs  delta: %+.2fs%s",
+        t_ref,
         t_exact,
         delta,
         outlier_tag,
@@ -138,6 +145,37 @@ def _transcribe(audio_path: str, model_name: str) -> TokenMap:
             os.unlink(tmp_path)
         except OSError:
             pass
+
+
+def _find_chapter_heading_end(token_map: TokenMap, t_approx: float) -> float | None:
+    """Return the end time of the chapter heading keyword (e.g. 'Chapter', 'Part') if
+    one appears within _CHAPTER_HEADING_WINDOW_SECONDS after t_approx, else None."""
+    deadline = t_approx + _CHAPTER_HEADING_WINDOW_SECONDS
+    i = 0
+    while i < len(token_map) and token_map[i][1] <= t_approx:
+        i += 1
+    while i < len(token_map) and token_map[i][1] <= deadline:
+        word, end_time = token_map[i]
+        if _CHAPTER_HEADING_PATTERN.match(_normalize(word)):
+            logger.info("Chapter heading '%s' found at %.2fs", word.strip(), end_time)
+            return end_time
+        i += 1
+    return None
+
+
+def _detect_silence_before(audio_path: str, t_target: float, threshold_dbfs: float) -> float:
+    """Scan backward from t_target in 50 ms steps; return the last silence onset
+    before t_target (i.e. the point just before audio resumes)."""
+    audio = AudioSegment.from_file(audio_path)
+    end_ms = int(t_target * 1000)
+    start_ms = max(0, end_ms - _SILENCE_WINDOW_MS)
+
+    for i in range(end_ms - _SILENCE_STEP_MS, start_ms, -_SILENCE_STEP_MS):
+        chunk = audio[i : i + _SILENCE_STEP_MS]
+        if chunk.dBFS < threshold_dbfs:
+            return i / 1000.0
+
+    return t_target
 
 
 def _detect_silence(audio_path: str, t_approx: float, threshold_dbfs: float) -> float:

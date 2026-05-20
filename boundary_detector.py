@@ -14,8 +14,15 @@ DEFAULT_OPENAI_API_BASE = "https://api.groq.com/openai/v1"
 DEFAULT_OPENAI_MODEL = "llama-3.1-8b-instant"
 
 _SYSTEM_PROMPT = (
-    "You are analyzing a LibriVox audiobook transcript. LibriVox chapters often begin "
-    "with a spoken legal disclaimer. Identify the last word of that disclaimer section.\n\n"
+    "You are analyzing a LibriVox audiobook transcript. LibriVox chapters begin with a "
+    "standard spoken disclaimer that follows this pattern:\n"
+    "  'This is a LibriVox recording. All LibriVox recordings are in the public domain. "
+    "For more information, please visit LibriVox.org. "
+    "[Title] by [Author], [chapter info], read by [Reader Name].'\n\n"
+    "The disclaimer ends immediately after the reader's name. "
+    "It does NOT include the chapter heading (e.g. 'Chapter 1') or any book text.\n\n"
+    "Identify the very last word of the disclaimer (typically the reader's name or a "
+    "closing word like 'domain' or 'org' if no reader name is given).\n\n"
     "Respond ONLY with a JSON object in this exact format:\n"
     '{"disclaimer_end_word": "lastword", "confidence_score": 0.95}\n\n'
     "If there is no disclaimer present, respond with:\n"
