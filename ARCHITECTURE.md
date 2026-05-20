@@ -155,10 +155,8 @@ chapter listen_url
 
 ```bash
 pip install -r requirements.txt
-# verify ffmpeg and ollama are installed
-./setup.sh
-# pulls required model if not already present
-ollama pull llama3.2:3b
+# verifies ffmpeg and ollama are installed, pulls model if needed
+python setup.py
 ```
 
 In development, set `OLLAMA_MODEL` env var to switch models without code changes. Set `WHISPER_MODEL` to switch between `tiny` and `base`.
