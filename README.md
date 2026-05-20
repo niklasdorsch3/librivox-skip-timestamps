@@ -42,10 +42,29 @@ Download `repository.json` and serve it from your own app. Each entry maps a Lib
 
 ### Setup
 
+**1. Install Ollama**
+
+Ollama runs LLMs locally. Download it from [ollama.com](https://ollama.com/download) and install it like a normal app. Once installed, it runs as a background service.
+
+**2. Pull a model**
+
 ```bash
-pip install -r requirements.txt
 ollama pull llama3.2:3b
 ```
+
+This downloads the model (~2GB) once. You can verify it's working:
+
+```bash
+ollama run llama3.2:3b "hello"
+```
+
+**3. Install Python dependencies**
+
+```bash
+pip install -r requirements.txt
+```
+
+`faster-whisper` (used for transcription) will download the Whisper model automatically on first run (~150MB for `base`).
 
 ### Running a batch
 
