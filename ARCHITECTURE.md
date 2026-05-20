@@ -130,20 +130,22 @@ All writes go through `_atomic_write`: data is serialised to a temp file in the 
 
 ### `verify.py` — Verification Script
 
-Run after `main.py` completes. Picks 10 chapters at random from the new batch output and walks the contributor through each one interactively:
+Run after `main.py` completes. Reads `chapters_to_verify.json` (written by `main.py`) to identify the new batch output, selects up to 10 chapters (outliers first, then random), starts a local web server on `localhost:8765`, and opens a browser UI for the contributor to review each chapter.
 
-```
-Chapter 3/10: The Art of War — Chapter 1
-Listen: https://librivox.org/...
-Pipeline result: 14.80s
-Does this sound correct? [y/n]:
-```
+**Selection strategy:** All chapters where `is_outlier: true` are prioritised (up to 10); remaining slots are filled at random from non-outliers. Contributors cannot pre-select entries.
 
-The contributor opens the URL, skips to 14.80s, listens, and presses `y` or `n`. On `y`, the entry is written with `"verified": true`. On `n`, a replacement chapter is picked at random until 10 are confirmed.
+**Browser UI per chapter:** Book title, chapter number, `listen_url` (clickable), pipeline-generated `exact_audio_skip_seconds`, and an `[OUTLIER: delta Xs]` warning when applicable. An HTML5 audio player starts at the skip timestamp. Buttons: "Play from 5s before", "Seek to skip time", "Approve ✓", "Deny ✗".
 
-Once 10 entries are verified, `verify.py` exits and the output is ready to PR.
+- **Approve:** calls `repository.mark_verified(listen_url)` and advances to the next chapter.
+- **Deny:** stops immediately; displays "Verification failed: Pipeline produced incorrect result. File a bug and fix the pipeline before rerunning."
 
-Does not re-run the Pipeline — it only marks existing output. Does not write to the Checkpoint DB.
+After 10 approvals (or all chapters when fewer than 10 are available), the server shuts down and the terminal prompts: "Create PR now? (y/n)". On `y`, the script commits `repository.json` and runs `gh pr create` with an auto-generated description. On `n`, it prints the git/gh commands for the contributor to run manually.
+
+If fewer than 10 chapters are available and `--override` is not set, exits with: "Only N chapters verified (need 10 minimum). Run `python verify.py --override` to proceed."
+
+`--override` flag: allows PR creation with fewer than 10 verified chapters (minimum 1).
+
+Does not re-run the Pipeline — only marks existing output verified.
 
 ### `.github/workflows/validate-contribution.yml` — CI check
 
@@ -206,7 +208,7 @@ In development, set `OLLAMA_MODEL` env var to switch models without code changes
 1. Fork the repo
 2. Add LibriVox book IDs to books.txt
 3. python main.py              # downloads + processes chapters, writes to repository.json
-4. python verify.py            # interactively confirm 10 chapters, marks them verified: true
+4. python verify.py            # browser UI — approve 10 chapters, marks them verified: true
 5. git commit + push + open PR
 6. CI checks: ≤100 new entries, ≥10 verified  →  merge
 ```
