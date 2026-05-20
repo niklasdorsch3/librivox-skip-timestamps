@@ -35,7 +35,7 @@
       "title": "Audio fetcher",
       "doc": "docs/.scratch/03-audio-fetcher.md",
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "blockedBy": ["IS-00"],
       "notes": ""
     },

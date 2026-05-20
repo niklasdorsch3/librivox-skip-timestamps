@@ -11,6 +11,7 @@ Started: Wed May 20 14:43:51 UTC 2026
 - Atomic write pattern: tempfile.mkstemp in same dir → write → os.replace; cleanup tmp on failure
 - boundary_detector.py: inject a fake requests.Session for testing — session.post.side_effect = [mock_response, ...]; Ollama response shape is {"message": {"content": "<json string>"}}
 - BoundaryResult = Union[NoDisclaimer, AnchorWord] — use isinstance() to branch on the result type
+- audio_fetcher.py: use @staticmethod + @contextmanager on AudioFetcher.fetch(); inject session for testing; mock session.get.side_effect = [exc, ok_response] for retry tests; mock response needs raise_for_status() and iter_content()
 
 ## 2026-05-20 15:00 UTC - IS-00
 Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
@@ -54,4 +55,19 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Each mock response needs raise_for_status() and .json() returning {"message": {"content": "<json string>"}}
   - The retry covers malformed *content* string, not HTTP errors from Ollama itself
   - OLLAMA_MODEL env var is read fresh on each detect_boundary() call — no module-level caching
+---
+
+## 2026-05-20 - IS-03
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created audio_fetcher.py: AudioFetcher.fetch() context manager, AudioFetchError, _download() with retry
+- @staticmethod + @contextmanager pattern: mkstemp creates temp file, finally block always deletes it
+- Retry logic: MAX_RETRIES=1, loops over requests.exceptions.RequestException (covers timeout, connection error, HTTP errors)
+- Created tests/test_audio_fetcher.py — 9 tests covering happy path, cleanup after exception, retry success, retry exhaustion, HTTP errors
+- Updated ARCHITECTURE.md with audio_fetcher.py module entry
+- **Learnings for future iterations:**
+  - `@staticmethod` + `@contextmanager` combo works cleanly for class-namespaced context managers
+  - tempfile.mkstemp returns (fd, path) — close fd immediately via os.close(fd), then open in "wb" for writing
+  - For retry testing: session.get.side_effect = [exception_instance, ok_response_mock]
+  - Mock response for streaming: needs raise_for_status() + iter_content(chunk_size=N) returning list of bytes chunks
+  - AudioFetchError is raised inside the try block (before yield), so temp file cleanup still runs via finally
 ---
