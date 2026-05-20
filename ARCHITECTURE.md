@@ -50,12 +50,14 @@ This repository is a data companion to the **easy-audiobook** player. `repositor
 
 Entry point. Reads a flat list of LibriVox book IDs from `books.txt` (one ID per line), fetches all chapters for each book from the LibriVox API, and skips any chapter whose `listen_url` already exists in `repository.json`. Failed chapters are logged to stdout with their error reason and retried on the next run. Downloads the chapter audio to a temporary file, invokes the Pipeline, then deletes the temporary file regardless of success or failure. Audio never persists to disk beyond the duration of a single chapter's processing.
 
-Logs to stdout per file:
-- `✓ <file>` — completed successfully
-- `~ <file> (no disclaimer)` — completed, no Disclaimer detected
-- `✗ <file> — <reason>` — failed (e.g. "LLM returned malformed JSON after retry", "Anchor Word not found in Token Map")
+Logs to stdout per chapter:
+- `✓ <title> — <chapter>` — completed successfully
+- `~ <title> — <chapter> (no disclaimer)` — completed, no Disclaimer detected
+- `✗ <title> — <chapter> — <reason>` — failed (e.g. "LLM returned malformed JSON after retry", "Anchor Word not found in Token Map")
 
-At the end of each run, prints a summary: total processed, succeeded, no-disclaimer, failed. Failed files are listed by path with their error reason so they can be investigated or re-run.
+At the end of each run, prints a summary: total processed, succeeded, no-disclaimer, failed. Failed chapters are listed with their error reason so they can be investigated or re-run.
+
+Writes a manifest of all new chapters generated in the run to `chapters_to_verify.json` (a JSON array of `listen_url` strings). The Verification Script uses this to scope its random sample to only this run's output.
 
 ### `analyzer.py` — Pipeline
 
