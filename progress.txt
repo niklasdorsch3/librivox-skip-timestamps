@@ -9,6 +9,8 @@ Started: Wed May 20 14:43:51 UTC 2026
 - Audio fixture is at tests/fixtures/sample_chapter.mp3 (LibriVox Art of War ch01, ~25s, contains Disclaimer)
 - repository.py: top-level key is str(librivox_project_id); upsert accepts {book_metadata: {...}, chapter: {...}}
 - Atomic write pattern: tempfile.mkstemp in same dir → write → os.replace; cleanup tmp on failure
+- boundary_detector.py: inject a fake requests.Session for testing — session.post.side_effect = [mock_response, ...]; Ollama response shape is {"message": {"content": "<json string>"}}
+- BoundaryResult = Union[NoDisclaimer, AnchorWord] — use isinstance() to branch on the result type
 
 ## 2026-05-20 15:00 UTC - IS-00
 Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
@@ -38,4 +40,18 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Repository JSON key is str(librivox_project_id), not int
   - Mock os.replace to simulate a mid-write crash; the original file should be untouched
   - tempfile.mkstemp returns (fd, path) — must close fd via os.fdopen before os.replace
+---
+
+## 2026-05-20 - IS-02
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created boundary_detector.py: detect_boundary(), AnchorWord, NoDisclaimer, BoundaryDetectionError
+- Ollama call targets /api/chat with format="json" and stream=False; model from OLLAMA_MODEL env var (default llama3.2:3b)
+- Retry-once on malformed JSON content; raises BoundaryDetectionError if second attempt also fails
+- Created tests/test_boundary_detector.py — 6 tests covering all acceptance criteria using MagicMock session
+- Updated ARCHITECTURE.md with boundary_detector.py module entry
+- **Learnings for future iterations:**
+  - Fake session: MagicMock with session.post.side_effect = [list_of_mock_responses]
+  - Each mock response needs raise_for_status() and .json() returning {"message": {"content": "<json string>"}}
+  - The retry covers malformed *content* string, not HTTP errors from Ollama itself
+  - OLLAMA_MODEL env var is read fresh on each detect_boundary() call — no module-level caching
 ---
