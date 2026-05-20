@@ -91,6 +91,18 @@ Implements three Stages sequentially — Transcription, Boundary Analysis, Silen
 - Enforces safety checks: `exact_audio_skip_seconds` ≤ 45 s; Outlier flagged if |T_exact − T_approx| > 4 s.
 - Upserts the chapter entry into `repository.json`.
 
+### `boundary_detector.py` — Boundary Detector
+
+Owns the full contract of "given a transcript, return where the Disclaimer ends." Encapsulates the Ollama HTTP call, retry-once logic, JSON parsing, and the `NoDisclaimer` vs `AnchorWord` branching.
+
+Exposes a single public function:
+
+- `detect_boundary(transcript, session?) -> BoundaryResult` — calls Ollama, returns `AnchorWord(word, confidence)` or `NoDisclaimer`. Retries once on malformed JSON; raises `BoundaryDetectionError` if both attempts fail.
+
+`BoundaryResult` is `Union[NoDisclaimer, AnchorWord]`. The `session` parameter accepts any `requests.Session`-compatible object, enabling tests to inject a fake HTTP adapter without a running Ollama instance.
+
+The model is controlled by the `OLLAMA_MODEL` environment variable (default: `llama3.2:3b`).
+
 ### `repository.py` — Repository Module
 
 Owns all reads and writes to `repository.json`. No other module touches the file directly. Exposes four operations:
