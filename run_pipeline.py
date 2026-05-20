@@ -19,8 +19,8 @@ from analyzer import ChapterMetadata, run_pipeline
 
 AUDIO_SAMPLE = Path("audio_samples/prideandprejudice_01-03_austen_1min.wav")
 LISTEN_URL = (
-    "https://www.archive.org/download/prideprejudice_ver5_librivox/"
-    "prideprejudice_01_austen_64kb.mp3"
+    "https://www.archive.org/download/pride_and_prejudice_librivox/"
+    "prideandprejudice_01-03_austen_64kb.mp3"
 )
 
 

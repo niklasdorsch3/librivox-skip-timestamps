@@ -114,7 +114,7 @@ _HTML = """<!DOCTYPE html>
         outlierEl.style.display = 'none';
       }
       var audio = document.getElementById('player');
-      audio.src = ch.listen_url;
+      audio.src = '/api/audio?url=' + encodeURIComponent(ch.listen_url);
       audio.load();
       audio.addEventListener('loadedmetadata', function() {
         audio.currentTime = skipTime;
@@ -263,9 +263,52 @@ class _Handler(BaseHTTPRequestHandler):
                 "chapter": session.current_chapter(),
                 "message": session.message,
             })
+        elif self.path.startswith("/api/audio"):
+            self._proxy_audio()
         else:
             self.send_response(404)
             self.end_headers()
+
+    def _proxy_audio(self) -> None:
+        """Proxy audio from the remote listen_url, forwarding Range headers for seeking."""
+        from urllib.parse import urlparse, parse_qs
+        import requests as req
+        query = parse_qs(urlparse(self.path).query)
+        urls = query.get("url", [])
+        if not urls:
+            self.send_response(400)
+            self.end_headers()
+            return
+        url = urls[0]
+        try:
+            headers = {}
+            if "Range" in self.headers:
+                headers["Range"] = self.headers["Range"]
+            r = req.get(url, stream=True, timeout=30, headers=headers)
+            r.raise_for_status()
+            status = 206 if r.status_code == 206 else 200
+            self.send_response(status)
+            self.send_header("Content-Type", r.headers.get("Content-Type", "audio/mpeg"))
+            self.send_header("Accept-Ranges", "bytes")
+            for h in ("Content-Length", "Content-Range"):
+                if h in r.headers:
+                    self.send_header(h, r.headers[h])
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            try:
+                for chunk in r.iter_content(chunk_size=8192):
+                    self.wfile.write(chunk)
+            except BrokenPipeError:
+                pass  # browser cancelled the request (e.g. during seek)
+        except BrokenPipeError:
+            pass
+        except Exception as exc:
+            try:
+                self.send_response(502)
+                self.end_headers()
+                self.wfile.write(str(exc).encode())
+            except BrokenPipeError:
+                pass
 
     def do_POST(self) -> None:
         session: _VerificationSession = self.server.session  # type: ignore[attr-defined]
@@ -313,7 +356,10 @@ def run_verification(
         print("No chapters to verify. Run main.py first to generate new chapters.")
         return session
 
-    server = HTTPServer(("localhost", port), _Handler)
+    class _ReuseAddrServer(HTTPServer):
+        allow_reuse_address = True
+
+    server = _ReuseAddrServer(("localhost", port), _Handler)
     server.session = session  # type: ignore[attr-defined]
 
     url = f"http://localhost:{port}"

@@ -22,6 +22,8 @@ _SILENCE_WINDOW_MS = 3000
 _SILENCE_STEP_MS = 50
 _OUTLIER_DELTA_SECONDS = 4.0
 _CHAPTER_HEADING_WINDOW_SECONDS = 8.0
+_MIN_SILENCE_DURATION_MS = 300  # ignore sub-word dips shorter than this
+_GAP_SILENCE_THRESHOLD_DBFS = -38.0  # looser threshold for inter-segment gap detection
 _CHAPTER_HEADING_PATTERN = re.compile(r"^(chapter|part|book|prologue|epilogue|preface|introduction)$")
 
 TokenMap = list[tuple[str, float]]
@@ -92,10 +94,10 @@ def run_pipeline(
             f"Anchor word '{boundary.word}' not found in Token Map"
         )
 
-    # Stage 2b: if a chapter heading follows, scan for silence just before it
+    # Stage 2b: if a chapter heading follows, find where audio resumes in the gap
     t_chapter_end = _find_chapter_heading_end(token_map, t_approx)
     if t_chapter_end is not None:
-        t_exact = _detect_silence_before(audio_path, t_chapter_end, silence_threshold)
+        t_exact = _detect_silence_before(audio_path, t_approx, t_chapter_end, _GAP_SILENCE_THRESHOLD_DBFS)
     else:
         t_exact = _detect_silence(audio_path, t_approx, silence_threshold)
 
@@ -163,19 +165,42 @@ def _find_chapter_heading_end(token_map: TokenMap, t_approx: float) -> float | N
     return None
 
 
-def _detect_silence_before(audio_path: str, t_target: float, threshold_dbfs: float) -> float:
-    """Scan backward from t_target in 50 ms steps; return the last silence onset
-    before t_target (i.e. the point just before audio resumes)."""
+def _detect_silence_before(
+    audio_path: str,
+    t_gap_start: float,
+    t_gap_end: float,
+    threshold_dbfs: float,
+) -> float:
+    """Return the point where audio resumes in the gap between t_gap_start and t_gap_end.
+
+    Scans forward from t_gap_start (end of disclaimer anchor) to t_gap_end
+    (end of chapter heading word).  Finds the last silence→audio transition
+    that is preceded by at least _MIN_SILENCE_DURATION_MS of silence,
+    i.e. where the chapter heading starts speaking.
+    """
     audio = AudioSegment.from_file(audio_path)
-    end_ms = int(t_target * 1000)
-    start_ms = max(0, end_ms - _SILENCE_WINDOW_MS)
+    start_ms = int(t_gap_start * 1000)
+    end_ms = int(t_gap_end * 1000)
 
-    for i in range(end_ms - _SILENCE_STEP_MS, start_ms, -_SILENCE_STEP_MS):
+    in_silence = False
+    silence_start_ms: int | None = None
+    last_audio_onset: int | None = None
+    for i in range(start_ms, end_ms, _SILENCE_STEP_MS):
         chunk = audio[i : i + _SILENCE_STEP_MS]
-        if chunk.dBFS < threshold_dbfs:
-            return i / 1000.0
+        is_silent = chunk.dBFS < threshold_dbfs
+        if not in_silence and is_silent:
+            in_silence = True
+            silence_start_ms = i
+        elif in_silence and not is_silent:
+            duration = i - (silence_start_ms or i)
+            if duration >= _MIN_SILENCE_DURATION_MS:
+                last_audio_onset = i  # substantial gap — keep scanning for the last one
+            in_silence = False
+            silence_start_ms = None
 
-    return t_target
+    if last_audio_onset is not None:
+        return last_audio_onset / 1000.0
+    return t_gap_end
 
 
 def _detect_silence(audio_path: str, t_approx: float, threshold_dbfs: float) -> float:
