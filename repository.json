@@ -1,0 +1,163 @@
+{
+  "1709": {
+    "book_metadata": {
+      "librivox_project_id": 1709,
+      "gutenberg_text_id": "1342",
+      "title": "Pride and Prejudice"
+    },
+    "chapters": [
+      {
+        "file_name": "prideandprejudice_01-03_austen_1min.wav",
+        "chapter_index": 1,
+        "chapter_title": "Pride and Prejudice - Chapters 1-3",
+        "listen_url": "https://www.archive.org/download/prideprejudice_ver5_librivox/prideprejudice_01_austen_64kb.mp3",
+        "approximate_text_end": 18.96,
+        "exact_audio_skip_seconds": 18.96,
+        "detected_disclaimer_anchor_word": "Chris",
+        "is_outlier": false,
+        "verified": true
+      },
+      {
+        "file_name": "prideandprejudice_01-03_austen_1min.wav",
+        "chapter_index": 1,
+        "chapter_title": "Pride and Prejudice - Chapters 1-3",
+        "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_01-03_austen_64kb.mp3",
+        "approximate_text_end": 18.82,
+        "exact_audio_skip_seconds": 18.82,
+        "detected_disclaimer_anchor_word": "Garwich",
+        "is_outlier": false,
+        "verified": false
+      }
+    ]
+  },
+  "253": {
+    "book_metadata": {
+      "librivox_project_id": 253,
+      "gutenberg_text_id": "https://en.wikipedia.org/wiki/Pride_and_Prejudice",
+      "title": "Pride and Prejudice"
+    },
+    "chapters": [
+      {
+        "file_name": "prideandprejudice_04-05_austen_64kb.mp3",
+        "chapter_index": 2,
+        "chapter_title": "Chapters 4-5",
+        "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_04-05_austen_64kb.mp3",
+        "approximate_text_end": 26.09,
+        "exact_audio_skip_seconds": 26.09,
+        "detected_disclaimer_anchor_word": "org",
+        "is_outlier": false,
+        "verified": true
+      },
+      {
+        "file_name": "prideandprejudice_06_austen_64kb.mp3",
+        "chapter_index": 3,
+        "chapter_title": "Chapter 6",
+        "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_06_austen_64kb.mp3",
+        "approximate_text_end": 37.46,
+        "exact_audio_skip_seconds": 37.46,
+        "detected_disclaimer_anchor_word": "Jane",
+        "is_outlier": false,
+        "verified": false
+      },
+      {
+        "file_name": "prideandprejudice_07_austen_64kb.mp3",
+        "chapter_index": 4,
+        "chapter_title": "Chapter 7",
+        "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_07_austen_64kb.mp3",
+        "approximate_text_end": 12.17,
+        "exact_audio_skip_seconds": 12.17,
+        "detected_disclaimer_anchor_word": "org",
+        "is_outlier": false,
+        "verified": true
+      },
+      {
+        "file_name": "prideandprejudice_08_austen_64kb.mp3",
+        "chapter_index": 5,
+        "chapter_title": "Chapter 8",
+        "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_08_austen_64kb.mp3",
+        "approximate_text_end": 25.79,
+        "exact_audio_skip_seconds": 25.79,
+        "detected_disclaimer_anchor_word": "com",
+        "is_outlier": false,
+        "verified": true
+      },
+      {
+        "file_name": "prideandprejudice_09_austen_64kb.mp3",
+        "chapter_index": 6,
+        "chapter_title": "Chapter 9",
+        "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_09_austen_64kb.mp3",
+        "approximate_text_end": 25.82,
+        "exact_audio_skip_seconds": 25.82,
+        "detected_disclaimer_anchor_word": "com",
+        "is_outlier": false,
+        "verified": true
+      },
+      {
+        "file_name": "prideandprejudice_10-11_austen_64kb.mp3",
+        "chapter_index": 7,
+        "chapter_title": "Chapters 10-11",
+        "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_10-11_austen_64kb.mp3",
+        "approximate_text_end": 25.029999999999998,
+        "exact_audio_skip_seconds": 25.029999999999998,
+        "detected_disclaimer_anchor_word": "Mackenzie",
+        "is_outlier": false,
+        "verified": false
+      },
+      {
+        "file_name": "prideandprejudice_12-13_austen_64kb.mp3",
+        "chapter_index": 8,
+        "chapter_title": "Chapters 12-13",
+        "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_12-13_austen_64kb.mp3",
+        "approximate_text_end": 10.610000000000001,
+        "exact_audio_skip_seconds": 10.610000000000001,
+        "detected_disclaimer_anchor_word": "org",
+        "is_outlier": false,
+        "verified": false
+      },
+      {
+        "file_name": "prideandprejudice_14-15_austen_64kb.mp3",
+        "chapter_index": 9,
+        "chapter_title": "Chapters 14-15",
+        "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_14-15_austen_64kb.mp3",
+        "approximate_text_end": 16.79,
+        "exact_audio_skip_seconds": 16.79,
+        "detected_disclaimer_anchor_word": "Bradford",
+        "is_outlier": false,
+        "verified": true
+      },
+      {
+        "file_name": "prideandprejudice_16-17_austen_64kb.mp3",
+        "chapter_index": 10,
+        "chapter_title": "Chapters 16-17",
+        "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_16-17_austen_64kb.mp3",
+        "approximate_text_end": 20.3,
+        "exact_audio_skip_seconds": 20.3,
+        "detected_disclaimer_anchor_word": "Coleman",
+        "is_outlier": false,
+        "verified": true
+      },
+      {
+        "file_name": "prideandprejudice_18-19_austen_64kb.mp3",
+        "chapter_index": 11,
+        "chapter_title": "Chapters 18-19",
+        "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_18-19_austen_64kb.mp3",
+        "approximate_text_end": 20.06,
+        "exact_audio_skip_seconds": 20.06,
+        "detected_disclaimer_anchor_word": "org",
+        "is_outlier": false,
+        "verified": false
+      },
+      {
+        "file_name": "prideandprejudice_20_austen_64kb.mp3",
+        "chapter_index": 12,
+        "chapter_title": "Chapter 20",
+        "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_20_austen_64kb.mp3",
+        "approximate_text_end": 20.47,
+        "exact_audio_skip_seconds": 20.47,
+        "detected_disclaimer_anchor_word": "Shields",
+        "is_outlier": false,
+        "verified": true
+      }
+    ]
+  }
+}
