@@ -48,6 +48,10 @@ _HTML = """<!DOCTYPE html>
     .msg-error { background: #f8d7da; color: #58151c; border: 1px solid #f1aeb5; }
     .msg-info { background: #cff4fc; color: #055160; border: 1px solid #9eeaf9; }
     #done { display: none; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #0d6efd; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    #loading { display: none; margin: 1rem 0; font-size: 1rem; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -64,71 +68,143 @@ _HTML = """<!DOCTYPE html>
     </div>
     <audio id="player" controls></audio>
     <div class="btn-row">
-      <button class="btn-before" onclick="playBefore()">Play from 5s before</button>
-      <button class="btn-seek" onclick="seekToSkip()">Seek to skip time</button>
+      <button class="btn-before" onclick="playBefore()" id="btn-before">Play from 5s before</button>
+      <button class="btn-seek" onclick="seekToSkip()" id="btn-seek">Seek to skip time</button>
     </div>
+    <div id="loading"><span class="spinner"></span> Processing...</div>
     <div class="btn-row">
-      <button class="btn-approve" onclick="doAction('approve')">Approve ✓</button>
-      <button class="btn-deny" onclick="doAction('deny')">Deny ✗</button>
+      <button class="btn-approve" onclick="doAction('approve')" id="btn-approve">Approve ✓</button>
+      <button class="btn-deny" onclick="doAction('deny')" id="btn-deny">Deny ✗</button>
     </div>
   </div>
 
   <div id="done">
     <div id="done-msg" class="message"></div>
+    <div id="chapter-details" style="display: none; margin-top: 2rem;">
+      <h2>Chapter Details</h2>
+      <div class="card">
+        <p><strong>Title:</strong> <span id="detail-title"></span></p>
+        <p><strong>Chapter:</strong> <span id="detail-chapter"></span></p>
+        <p><strong>Listen URL:</strong> <a id="detail-url" href="" target="_blank"></a></p>
+        <p><strong>Skip Time (detected):</strong> <span id="detail-skip"></span>s</p>
+        <p><strong>Anchor Word:</strong> <span id="detail-anchor"></span></p>
+        <p><strong>Is Outlier:</strong> <span id="detail-outlier"></span></p>
+      </div>
+    </div>
   </div>
 
   <script>
     var skipTime = 0;
 
     function render(data) {
-      if (data.status !== 'active') {
-        document.getElementById('verify').style.display = 'none';
-        document.getElementById('done').style.display = 'block';
-        var cls = data.status === 'complete' ? 'msg-success'
-                : data.status === 'denied'   ? 'msg-error'
-                : 'msg-info';
-        var el = document.getElementById('done-msg');
-        el.className = 'message ' + cls;
-        el.textContent = data.message || 'Done.';
-        return;
+      try {
+        console.log('render() called, status:', data.status);
+        if (data.status !== 'active') {
+          console.log('Status not active, showing done message');
+          document.getElementById('verify').style.display = 'none';
+          document.getElementById('done').style.display = 'block';
+          var cls = data.status === 'complete' ? 'msg-success'
+                  : data.status === 'denied'   ? 'msg-error'
+                  : 'msg-info';
+          var el = document.getElementById('done-msg');
+          el.className = 'message ' + cls;
+          el.textContent = data.message || 'Done.';
+
+          if (data.status === 'denied' && data.chapter) {
+            try {
+              var ch = data.chapter;
+              console.log('Showing chapter details for denied chapter:', ch);
+              document.getElementById('chapter-details').style.display = 'block';
+              document.getElementById('detail-title').textContent = ch.title || '';
+              document.getElementById('detail-chapter').textContent = 'Chapter ' + ch.chapter_index + ': ' + ch.chapter_title;
+              var urlEl = document.getElementById('detail-url');
+              urlEl.href = ch.listen_url;
+              urlEl.textContent = ch.listen_url;
+              document.getElementById('detail-skip').textContent = ch.exact_audio_skip_seconds.toFixed(2);
+              document.getElementById('detail-anchor').textContent = ch.detected_disclaimer_anchor_word || '(none)';
+              document.getElementById('detail-outlier').textContent = ch.is_outlier ? 'Yes' : 'No';
+              console.log('Chapter details displayed');
+            } catch (e) {
+              console.error('Error displaying chapter details:', e);
+            }
+          }
+          return;
+        }
+        var ch = data.chapter;
+        skipTime = ch.exact_audio_skip_seconds;
+        console.log('Updating progress to chapter', data.current_index + 1, 'of', data.total);
+        document.getElementById('progress').textContent =
+          'Chapter ' + (data.current_index + 1) + ' of ' + data.total
+          + ' — Approved: ' + data.approved;
+        console.log('Updated progress');
+        document.getElementById('book-title').textContent = ch.title || '';
+        document.getElementById('chapter-label').textContent =
+          'Chapter ' + ch.chapter_index + ': ' + ch.chapter_title;
+        var urlEl = document.getElementById('listen-url');
+        urlEl.href = ch.listen_url;
+        urlEl.textContent = ch.listen_url;
+        document.getElementById('skip-seconds').textContent = skipTime.toFixed(2);
+        var outlierEl = document.getElementById('outlier');
+        if (ch.is_outlier) {
+          var delta = ch.exact_audio_skip_seconds - ch.approximate_text_end;
+          var sign = delta >= 0 ? '+' : '';
+          outlierEl.textContent = '[OUTLIER: delta ' + sign + delta.toFixed(2) + 's]';
+          outlierEl.style.display = '';
+        } else {
+          outlierEl.style.display = 'none';
+        }
+        var audio = document.getElementById('player');
+        audio.src = '/api/audio?url=' + encodeURIComponent(ch.listen_url);
+        console.log('Set audio src, calling load()');
+        audio.load();
+        audio.addEventListener('loadedmetadata', function() {
+          audio.currentTime = skipTime;
+        }, {once: true});
+        console.log('render() complete');
+      } catch (err) {
+        console.error('Error in render():', err);
       }
-      var ch = data.chapter;
-      skipTime = ch.exact_audio_skip_seconds;
-      document.getElementById('progress').textContent =
-        'Chapter ' + (data.current_index + 1) + ' of ' + data.total
-        + ' — Approved: ' + data.approved;
-      document.getElementById('book-title').textContent = ch.title || '';
-      document.getElementById('chapter-label').textContent =
-        'Chapter ' + ch.chapter_index + ': ' + ch.chapter_title;
-      var urlEl = document.getElementById('listen-url');
-      urlEl.href = ch.listen_url;
-      urlEl.textContent = ch.listen_url;
-      document.getElementById('skip-seconds').textContent = skipTime.toFixed(2);
-      var outlierEl = document.getElementById('outlier');
-      if (ch.is_outlier) {
-        var delta = ch.exact_audio_skip_seconds - ch.approximate_text_end;
-        var sign = delta >= 0 ? '+' : '';
-        outlierEl.textContent = '[OUTLIER: delta ' + sign + delta.toFixed(2) + 's]';
-        outlierEl.style.display = '';
-      } else {
-        outlierEl.style.display = 'none';
-      }
-      var audio = document.getElementById('player');
-      audio.src = '/api/audio?url=' + encodeURIComponent(ch.listen_url);
-      audio.load();
-      audio.addEventListener('loadedmetadata', function() {
-        audio.currentTime = skipTime;
-      }, {once: true});
     }
 
     function load() {
-      fetch('/api/session').then(function(r) { return r.json(); }).then(render);
+      fetch('/api/session').then(function(r) { return r.json(); }).then(render).catch(function(err) { console.error('Load error:', err); });
     }
 
     function doAction(action) {
-      fetch('/api/' + action, {method: 'POST'})
-        .then(function(r) { return r.json(); })
-        .then(function() { load(); });
+      console.log('doAction called with:', action);
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('btn-approve').disabled = true;
+      document.getElementById('btn-deny').disabled = true;
+      document.getElementById('btn-before').disabled = true;
+      document.getElementById('btn-seek').disabled = true;
+      var url = '/api/' + action;
+      console.log('Fetching:', url);
+      fetch(url, {method: 'POST'})
+        .then(function(r) {
+          console.log('Got response, status:', r.status);
+          if (!r.ok) {
+            console.error('Response not ok:', r.statusText);
+            throw new Error('Response status: ' + r.status);
+          }
+          return r.json();
+        })
+        .then(function(data) {
+          console.log('Got JSON data:', data);
+          render(data);
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('btn-approve').disabled = false;
+          document.getElementById('btn-deny').disabled = false;
+          document.getElementById('btn-before').disabled = false;
+          document.getElementById('btn-seek').disabled = false;
+        })
+        .catch(function(err) {
+          console.error('Caught error:', err);
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('btn-approve').disabled = false;
+          document.getElementById('btn-deny').disabled = false;
+          document.getElementById('btn-before').disabled = false;
+          document.getElementById('btn-seek').disabled = false;
+        });
     }
 
     function playBefore() {
@@ -314,13 +390,29 @@ class _Handler(BaseHTTPRequestHandler):
         session: _VerificationSession = self.server.session  # type: ignore[attr-defined]
         if self.path == "/api/approve":
             session.approve()
+            response = {
+                "status": session.status,
+                "current_index": session.current_index,
+                "total": len(session.chapters),
+                "approved": session.approved,
+                "chapter": session.current_chapter(),
+                "message": session.message,
+            }
             if session.status != "active":
                 threading.Thread(target=self.server.shutdown, daemon=True).start()
-            self._send_json({"ok": True})
+            self._send_json(response)
         elif self.path == "/api/deny":
             session.deny()
+            response = {
+                "status": session.status,
+                "current_index": session.current_index,
+                "total": len(session.chapters),
+                "approved": session.approved,
+                "chapter": session.current_chapter(),
+                "message": session.message,
+            }
             threading.Thread(target=self.server.shutdown, daemon=True).start()
-            self._send_json({"ok": True})
+            self._send_json(response)
         else:
             self.send_response(404)
             self.end_headers()
