@@ -26,4 +26,4 @@ The Ollama endpoint and model are configurable via environment variables (`OLLAM
 
 ## Blocked by
 
-None — can start immediately.
+- 00-setup-and-fixtures.md (for test environment: ollama)

@@ -37,5 +37,6 @@ If 10 or more chapters are approved (or `--override` is used with any number >= 
 
 ## Blocked by
 
+- 00-setup-and-fixtures.md (for test environment)
 - 01-repository-module.md
 - 03-audio-fetcher.md

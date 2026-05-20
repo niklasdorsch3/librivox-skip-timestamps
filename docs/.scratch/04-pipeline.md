@@ -31,5 +31,6 @@ A real LibriVox chapter trimmed to ~45 seconds (or shorter if the disclaimer nat
 
 ## Blocked by
 
+- 00-setup-and-fixtures.md (for test environment: audio fixture)
 - 02-boundary-detector.md
 - 03-audio-fetcher.md

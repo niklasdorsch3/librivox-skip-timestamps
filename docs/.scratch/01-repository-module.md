@@ -20,4 +20,4 @@ The module exposes four operations: load the full repository, upsert a chapter e
 
 ## Blocked by
 
-None — can start immediately.
+- 00-setup-and-fixtures.md (for test environment)

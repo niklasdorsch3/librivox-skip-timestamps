@@ -24,4 +24,5 @@ Rules (warnings only):
 
 ## Blocked by
 
+- 00-setup-and-fixtures.md (for test environment)
 - 01-repository-module.md

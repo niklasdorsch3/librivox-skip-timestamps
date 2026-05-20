@@ -12,7 +12,7 @@ Project setup: `requirements.txt`, `setup.py`, and the audio test fixture. This 
 - Pulls the default Ollama model (`llama3.2:3b`) via `ollama pull` if not already present
 - Prints a summary of what was checked/installed
 
-The audio fixture is a real LibriVox chapter trimmed to ~20 seconds that contains a real Disclaimer. A human must select, download, and trim this file — it cannot be automated. Commit it to `tests/fixtures/sample_chapter.mp3`. A `tests/fixtures/README.md` documents the source and selection rationale.
+The audio fixture is a real LibriVox chapter trimmed to ~20 seconds that contains a real Disclaimer. This has already been selected and added. Commit it to `tests/fixtures/sample_chapter.mp3`. A `tests/fixtures/README.md` documents the source and selection rationale.
 
 ## Acceptance criteria
 
@@ -28,4 +28,4 @@ The audio fixture is a real LibriVox chapter trimmed to ~20 seconds that contain
 
 ## Blocked by
 
-None — can start immediately. Audio fixture requires human selection and trimming.
+None — start here. This is the foundation for all other stories.

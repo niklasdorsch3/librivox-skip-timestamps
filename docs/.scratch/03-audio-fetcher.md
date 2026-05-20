@@ -18,4 +18,4 @@ Handles download retries and timeouts internally. The caller never sees a partia
 
 ## Blocked by
 
-None — can start immediately.
+- 00-setup-and-fixtures.md (for test environment)

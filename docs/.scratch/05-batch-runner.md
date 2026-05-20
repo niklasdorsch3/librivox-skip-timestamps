@@ -27,6 +27,7 @@ Writes a manifest of all new chapters generated in this run to `chapters_to_veri
 
 ## Blocked by
 
+- 00-setup-and-fixtures.md (for test environment)
 - 01-repository-module.md
 - 03-audio-fetcher.md
 - 04-pipeline.md
