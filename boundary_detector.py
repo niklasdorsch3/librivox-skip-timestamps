@@ -8,7 +8,10 @@ from typing import Union
 import requests
 
 OLLAMA_BASE_URL = "http://localhost:11434"
-DEFAULT_MODEL = "llama3.2:3b"
+DEFAULT_OLLAMA_MODEL = "llama3.2:3b"
+
+DEFAULT_OPENAI_API_BASE = "https://api.groq.com/openai/v1"
+DEFAULT_OPENAI_MODEL = "llama-3.1-8b-instant"
 
 _SYSTEM_PROMPT = (
     "You are analyzing a LibriVox audiobook transcript. LibriVox chapters often begin "
@@ -46,18 +49,27 @@ def detect_boundary(
 ) -> BoundaryResult:
     """Return where the Disclaimer ends, or NoDisclaimer if none is present.
 
-    Retries the Ollama call once on malformed JSON.  Raises BoundaryDetectionError
-    if both attempts fail.
+    Uses an OpenAI-compatible API (e.g. Groq) when OPENAI_API_KEY is set,
+    otherwise falls back to a local Ollama instance.
+
+    Retries once on malformed JSON. Raises BoundaryDetectionError if both
+    attempts fail.
     """
-    model = os.environ.get("OLLAMA_MODEL", DEFAULT_MODEL)
     if session is None:
         session = requests.Session()
 
-    raw = _call_ollama(transcript, model, session)
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if api_key:
+        caller = lambda t: _call_openai(t, session, api_key)
+    else:
+        model = os.environ.get("OLLAMA_MODEL", DEFAULT_OLLAMA_MODEL)
+        caller = lambda t: _call_ollama(t, model, session)
+
+    raw = caller(transcript)
     try:
         data = json.loads(raw)
     except json.JSONDecodeError:
-        raw = _call_ollama(transcript, model, session)
+        raw = caller(transcript)
         try:
             data = json.loads(raw)
         except json.JSONDecodeError:
@@ -66,6 +78,29 @@ def detect_boundary(
             )
 
     return _parse(data)
+
+
+def _call_openai(transcript: str, session: requests.Session, api_key: str) -> str:
+    """POST to an OpenAI-compatible /v1/chat/completions endpoint and return content."""
+    api_base = os.environ.get("OPENAI_API_BASE", DEFAULT_OPENAI_API_BASE)
+    model = os.environ.get("OPENAI_MODEL", DEFAULT_OPENAI_MODEL)
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "user", "content": transcript},
+        ],
+        "response_format": {"type": "json_object"},
+    }
+    headers = {"Authorization": f"Bearer {api_key}"}
+    resp = session.post(
+        f"{api_base}/chat/completions",
+        json=payload,
+        headers=headers,
+        timeout=30,
+    )
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]["content"]
 
 
 def _call_ollama(transcript: str, model: str, session: requests.Session) -> str:
