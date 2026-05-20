@@ -3,6 +3,9 @@ Started: Wed May 20 14:43:51 UTC 2026
 ---
 
 ## Codebase Patterns
+- verify.py uses Python's built-in HTTPServer; attach session state to the server instance (`server.session = session`) so handlers access it via `self.server.session`
+- HTTPServer.shutdown() cannot be called from the handler thread (deadlock) — use `threading.Thread(target=self.server.shutdown, daemon=True).start()` instead
+- Embedded HTML in Python: use `"""..."""` triple-double-quote strings; use single-quoted JS strings inside so no escaping needed
 - LibriVox audio fixtures: download from archive.org with Range header (64kbps → 8KB/s, so 200KB ≈ 25s)
 - setup.py is a Python script (not shell), checks ffmpeg via shutil.which + ollama via HTTP to localhost:11434
 - `requests` is pre-installed in codespace; `pydub`, `faster-whisper`, `pydantic`, `pytest` are NOT — install via pip
@@ -15,6 +18,24 @@ Started: Wed May 20 14:43:51 UTC 2026
 - analyzer.py: inject fake detector via `detector` param (default: detect_boundary); faster-whisper word.end is np.float64 — call float() on it; abs(delta) > N also yields np.bool_ — call bool() to get Python bool
 - ffmpeg not in Codespace: install static-ffmpeg via pip, call static_ffmpeg.add_paths() in tests/conftest.py (pydub calls ffmpeg/ffprobe as subprocess, so PATH must be set before any pydub import)
 - faster-whisper strips punctuation inconsistently — normalize both anchor word and token map words with re.sub(r"[^a-z0-9]+", "", w.lower()) when matching
+
+## 2026-05-20 - IS-06
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created verify.py: local web server (HTTPServer) with embedded HTML/JS browser UI
+- load_verification_candidates(): reads chapters_to_verify.json, merges full metadata from repository.json
+- select_chapters(): outliers first (up to max), then random non-outliers — no contributor pre-selection
+- _VerificationSession: tracks approve/deny state; approve calls repository.mark_verified(); deny stops immediately
+- Completion logic: >=10 approvals → complete; all approved but <10 with no override → not_enough; override + >=1 → complete
+- After server shuts down, terminal prompts "Create PR now?" — commits repository.json + runs gh pr create
+- Created tests/test_verify.py: 18 tests covering selection logic, candidate loading, session state
+- Updated ARCHITECTURE.md: rewrote verify.py module description (CLI → browser UI)
+- Files changed: verify.py, tests/test_verify.py, ARCHITECTURE.md, prd.json, progress.txt
+- **Learnings for future iterations:**
+  - HTTPServer can hold arbitrary state on the instance; handlers access it via self.server.X
+  - server.shutdown() deadlocks when called from within the handler thread — always spawn a new thread for it
+  - Embedded HTML in Python triple-double-quote strings: JS single quotes need no escaping; HTML double-quoted attrs work fine
+  - _VerificationSession._check_completion() is only called when current_index >= len(chapters) (all chapters processed)
+---
 
 ## 2026-05-20 15:00 UTC - IS-00
 Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID

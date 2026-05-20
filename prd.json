@@ -62,7 +62,7 @@
       "title": "Verification script",
       "doc": "docs/.scratch/06-verification-script.md",
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "blockedBy": ["IS-00", "IS-01", "IS-03"],
       "notes": ""
     },
