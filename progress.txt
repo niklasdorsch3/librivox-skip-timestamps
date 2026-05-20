@@ -5,8 +5,10 @@ Started: Wed May 20 14:43:51 UTC 2026
 ## Codebase Patterns
 - LibriVox audio fixtures: download from archive.org with Range header (64kbps → 8KB/s, so 200KB ≈ 25s)
 - setup.py is a Python script (not shell), checks ffmpeg via shutil.which + ollama via HTTP to localhost:11434
-- `requests` is pre-installed in codespace; `pydub`, `faster-whisper`, `pydantic` are not — install via pip
+- `requests` is pre-installed in codespace; `pydub`, `faster-whisper`, `pydantic`, `pytest` are NOT — install via pip
 - Audio fixture is at tests/fixtures/sample_chapter.mp3 (LibriVox Art of War ch01, ~25s, contains Disclaimer)
+- repository.py: top-level key is str(librivox_project_id); upsert accepts {book_metadata: {...}, chapter: {...}}
+- Atomic write pattern: tempfile.mkstemp in same dir → write → os.replace; cleanup tmp on failure
 
 ## 2026-05-20 15:00 UTC - IS-00
 Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
@@ -22,4 +24,18 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Use Range: bytes=0-200000 to get first ~25 seconds at 64kbps
   - LibriVox Disclaimer is typically in the first 10-15 seconds of a chapter
   - MP3 sync bytes start at 0xFFFB (or similar) — the downloaded fixture is a valid raw MP3 (no ID3 tag)
+---
+
+## 2026-05-20 - IS-01
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created repository.py with load(), upsert(), mark_verified(), contains(), _atomic_write()
+- Pydantic models: UpsertPayload, BookMetadata, ChapterEntry (gutenberg_text_id and detected_disclaimer_anchor_word are Optional[str])
+- Created tests/test_repository.py — 17 tests covering all acceptance criteria including mid-write crash simulation
+- Updated ARCHITECTURE.md with repository.py module entry
+- **Learnings for future iterations:**
+  - pydantic and pytest are not pre-installed — run `pip install pydantic pytest` before testing
+  - upsert entry dict shape: {"book_metadata": {...}, "chapter": {...}} (not "chapters")
+  - Repository JSON key is str(librivox_project_id), not int
+  - Mock os.replace to simulate a mid-write crash; the original file should be untouched
+  - tempfile.mkstemp returns (fd, path) — must close fd via os.fdopen before os.replace
 ---

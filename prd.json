@@ -17,7 +17,7 @@
       "title": "Repository module",
       "doc": "docs/.scratch/01-repository-module.md",
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "blockedBy": ["IS-00"],
       "notes": ""
     },
