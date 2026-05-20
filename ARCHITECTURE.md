@@ -91,6 +91,16 @@ Implements three Stages sequentially — Transcription, Boundary Analysis, Silen
 - Enforces safety checks: `exact_audio_skip_seconds` ≤ 45 s; Outlier flagged if |T_exact − T_approx| > 4 s.
 - Upserts the chapter entry into `repository.json`.
 
+### `audio_fetcher.py` — Audio Fetcher
+
+Downloads a LibriVox chapter audio file to a temporary location and cleans up after use. Used as a context manager so the temp file is always deleted — on success or on failure — without callers managing cleanup.
+
+Exposes a single interface:
+
+- `AudioFetcher.fetch(listen_url, session?) -> ContextManager[str]` — downloads the file, yields its local path, then deletes the temp file on exit. Retries once on transient `requests` errors; raises `AudioFetchError` if all attempts fail.
+
+The `session` parameter accepts any `requests.Session`-compatible object for testing without real network access.
+
 ### `boundary_detector.py` — Boundary Detector
 
 Owns the full contract of "given a transcript, return where the Disclaimer ends." Encapsulates the Ollama HTTP call, retry-once logic, JSON parsing, and the `NoDisclaimer` vs `AnchorWord` branching.
