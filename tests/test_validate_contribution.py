@@ -16,7 +16,6 @@ def make_chapter(url: str, verified: bool = False) -> dict:
         "chapter_index": 1,
         "chapter_title": "Chapter 1",
         "listen_url": url,
-        "approximate_text_end": 5.0,
         "exact_audio_skip_seconds": 5.1,
         "detected_disclaimer_anchor_word": "domain",
         "is_outlier": False,

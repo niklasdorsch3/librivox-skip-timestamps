@@ -18,7 +18,6 @@ def _make_chapter(i, is_outlier=False, title="A Book"):
         "chapter_index": i,
         "chapter_title": f"Chapter {i}",
         "listen_url": f"http://example.com/{i}.mp3",
-        "approximate_text_end": 5.0,
         "exact_audio_skip_seconds": 11.0 if is_outlier else 5.0,
         "detected_disclaimer_anchor_word": "domain",
         "is_outlier": is_outlier,

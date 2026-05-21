@@ -128,7 +128,6 @@ def main(
                         "chapter_index": chapter["chapter_index"],
                         "chapter_title": chapter_title,
                         "listen_url": listen_url,
-                        "approximate_text_end": result.exact_audio_skip_seconds,
                         "exact_audio_skip_seconds": result.exact_audio_skip_seconds,
                         "detected_disclaimer_anchor_word": result.detected_disclaimer_anchor_word,
                         "is_outlier": result.is_outlier,

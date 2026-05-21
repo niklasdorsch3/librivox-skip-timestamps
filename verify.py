@@ -146,9 +146,7 @@ _HTML = """<!DOCTYPE html>
         document.getElementById('skip-seconds').textContent = skipTime.toFixed(2);
         var outlierEl = document.getElementById('outlier');
         if (ch.is_outlier) {
-          var delta = ch.exact_audio_skip_seconds - ch.approximate_text_end;
-          var sign = delta >= 0 ? '+' : '';
-          outlierEl.textContent = '[OUTLIER: delta ' + sign + delta.toFixed(2) + 's]';
+          outlierEl.textContent = '[OUTLIER: high delta flagged during pipeline run — verify carefully]';
           outlierEl.style.display = '';
         } else {
           outlierEl.style.display = 'none';

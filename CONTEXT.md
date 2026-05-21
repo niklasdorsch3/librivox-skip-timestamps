@@ -10,11 +10,12 @@ The full automated process that takes a LibriVox audio file as input and produce
 
 ## Stage
 
-One discrete step in the Pipeline. There are four Stages:
+One discrete step in the Pipeline. There are three core Stages, plus an optional Stage 2b:
 
 1. **Transcription** — converts the first 45 seconds of audio to word tokens with timestamps
 2. **Boundary Analysis** — identifies the last word of the Disclaimer using a local LLM
-3. **Silence Detection** — finds the exact silence onset after the Disclaimer ends
+2b. **Chapter Heading Detection** *(optional)* — if a chapter heading keyword follows the Disclaimer, locates the audio resumption point in the gap between Disclaimer and heading
+3. **Silence Detection** — finds T_exact; computes the Outlier flag
 
 Stages are run sequentially per chapter. The Pipeline returns a typed result — it has no dependency on the Repository. The caller (`main.py`) is responsible for writing the result to the Repository.
 
@@ -87,7 +88,6 @@ The output JSON file (`repository.json`) that maps LibriVox project IDs to per-c
       "chapter_index": 1,
       "chapter_title": "Chapter 1: The Laying of Plans",
       "listen_url": "https://librivox.org/...",
-      "approximate_text_end": 14.21,
       "exact_audio_skip_seconds": 15.15,
       "detected_disclaimer_anchor_word": "domain",
       "is_outlier": false,
@@ -101,7 +101,13 @@ The output JSON file (`repository.json`) that maps LibriVox project IDs to per-c
 
 ## Outlier
 
-A chapter entry where the difference between `approximate_text_end` (T_approx) and `exact_audio_skip_seconds` (T_exact) exceeds 4 seconds. Flagged in the Repository for manual review. A high outlier count signals that either the LLM or the Silence Detection Stage needs tuning. Chapters with no Disclaimer (`exact_audio_skip_seconds: 0`) are never Outliers.
+A chapter entry where |T_approx − T_exact| exceeded 4 seconds during pipeline processing. Flagged as `"is_outlier": true` in the Repository for manual review. T_approx is computed and used for this check inside the Pipeline but is not stored — only the final `exact_audio_skip_seconds` and the boolean flag are written to the Repository. A high outlier count signals that either the LLM or the Silence Detection Stage needs tuning. Chapters with no Disclaimer (`exact_audio_skip_seconds: 0`) are never Outliers.
+
+---
+
+## Chapter Heading Gap Detection
+
+An optional sub-stage (Stage 2b) that fires when the Token Map contains a chapter heading keyword (`chapter`, `part`, `book`, `prologue`, `epilogue`, `preface`, `introduction`) within 8 seconds after T_approx. In this case, rather than scanning 3 seconds forward from T_approx for silence, the Pipeline scans the gap between T_approx and the heading word's end time to find where audio resumes after the heading is spoken. Uses a looser silence threshold (−38 dBFS). The reference point used for the Outlier check and the pipeline log becomes `T_ref = T_chapter_end` when this stage fires.
 
 ---
 

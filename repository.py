@@ -22,7 +22,6 @@ class ChapterEntry(BaseModel):
     chapter_index: int
     chapter_title: str
     listen_url: str
-    approximate_text_end: float
     exact_audio_skip_seconds: float
     detected_disclaimer_anchor_word: Optional[str]
     is_outlier: bool

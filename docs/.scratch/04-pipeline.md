@@ -10,7 +10,7 @@ A Pipeline module exposing a single `run_pipeline(audio_path, chapter_metadata) 
 
 **Stage 3 — Silence Detection:** extract a 3-second audio window from T_approx using pydub, scan in 50ms steps measuring dBFS, find the first point below the Silence Threshold (−45 dBFS) to produce T_exact. If no silence is found, T_exact = T_approx.
 
-Log per chapter: `t_approx: 14.21s  t_exact: 15.15s  delta: +0.94s` (or `[OUTLIER]` if delta > 4s).
+Log per chapter: `t_ref: 14.21s  t_exact: 15.15s  delta: +0.94s` (or `[OUTLIER]` if delta > 4s). `t_ref` is T_approx in the normal case, or the chapter heading end time when Stage 2b fires.
 
 `PipelineResult` includes: `exact_audio_skip_seconds`, `detected_disclaimer_anchor_word` (null if no Disclaimer), `is_outlier` (true if delta > 4s, false otherwise), `verified: false`. T_approx is not included in the result — it is logged only.
 

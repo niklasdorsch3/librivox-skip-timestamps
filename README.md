@@ -19,10 +19,12 @@ Download `repository.json` and serve it from your own app. Each entry maps a Lib
     "chapters": [
       {
         "file_name": "art_of_war_01_sun_tzu.mp3",
-        "listen_url": "https://librivox.org/...",
         "chapter_index": 1,
+        "chapter_title": "Chapter 1: The Laying of Plans",
+        "listen_url": "https://librivox.org/...",
         "exact_audio_skip_seconds": 15.15,
         "detected_disclaimer_anchor_word": "domain",
+        "is_outlier": false,
         "verified": true
       }
     ]
@@ -30,7 +32,7 @@ Download `repository.json` and serve it from your own app. Each entry maps a Lib
 }
 ```
 
-`exact_audio_skip_seconds` is the point at which the disclaimer ends and the literary content begins. `verified: true` means a human has listened and confirmed the timestamp.
+`exact_audio_skip_seconds` is the point at which the disclaimer ends and the literary content begins. `verified: true` means a human has listened and confirmed the timestamp. `is_outlier: true` means the pipeline's LLM and silence-detection results diverged significantly — treat these entries with extra care.
 
 ## Development
 
@@ -98,7 +100,7 @@ Pull requests are automatically checked for:
 - **≤ 100** new chapter entries
 - **≥ 10** entries with `"verified": true`
 
-PRs that don't meet both requirements will be blocked by CI.
+PRs that don't meet both requirements will receive a warning comment from CI. Violations do not block merge — they flag the contribution for reviewer attention.
 
 ## Tuning
 
@@ -107,5 +109,9 @@ All parameters can be overridden via environment variables:
 | Variable | Default | Description |
 |---|---|---|
 | `WHISPER_MODEL` | `base` | faster-whisper model size (`tiny`, `base`) |
-| `OLLAMA_MODEL` | `llama3.2:3b` | Local LLM model |
+| `OLLAMA_MODEL` | `llama3.2:3b` | Local LLM model (used when `OPENAI_API_KEY` is not set) |
 | `SILENCE_THRESHOLD_DBFS` | `-45` | dBFS level considered silence |
+| `CONFIDENCE_THRESHOLD` | `0.5` | Minimum LLM confidence to accept an anchor word |
+| `OPENAI_API_KEY` | _(unset)_ | When set, uses an OpenAI-compatible API instead of local Ollama |
+| `OPENAI_API_BASE` | `https://api.groq.com/openai/v1` | API base URL for the OpenAI-compatible endpoint |
+| `OPENAI_MODEL` | `llama-3.1-8b-instant` | Model name for the OpenAI-compatible endpoint |

@@ -7,32 +7,33 @@
 
 ## System Overview
 
-A local, fully offline Python pipeline that processes LibriVox audio files and produces a public JSON Repository of per-chapter skip timestamps. No external APIs are used at runtime — all inference runs locally via faster-whisper and Ollama.
+A local Python pipeline that processes LibriVox audio files and produces a public JSON Repository of per-chapter skip timestamps. By default all inference runs locally via faster-whisper and Ollama. An optional OpenAI-compatible API path (e.g. Groq) is available when `OPENAI_API_KEY` is set — see the environment table below.
 
 This repository is a data companion to the **easy-audiobook** player. `repository.json` is a public dataset — consumers download it and serve it themselves from within their own app. It is not fetched at runtime from this repo.
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │                   Batch Runner (main.py)             │
-│  reads books.txt · fetches chapters · consults Checkpoint DB │
+│  reads books.txt · fetches chapters · skips known   │
+│                                                      │
+│  ┌───────────────────────────────────────────────┐  │
+│  │              Pipeline (analyzer.py)           │  │
+│  │                                               │  │
+│  │  Stage 1: Transcription (faster-whisper)      │  │
+│  │     └─▶ Token Map [(word, end_time_s), ...]   │  │
+│  │                                               │  │
+│  │  Stage 2: Boundary Analysis (Ollama / LLM)    │  │
+│  │     └─▶ Anchor Word + Confidence → T_approx  │  │
+│  │                                               │  │
+│  │  Stage 2b: Chapter Heading Detection          │  │
+│  │     └─▶ (optional) T_chapter_end → T_ref     │  │
+│  │                                               │  │
+│  │  Stage 3: Silence Detection (pydub / ffmpeg)  │  │
+│  │     └─▶ T_exact · outlier flag · safety check│  │
+│  └───────────────────────────────────────────────┘  │
+│                                                      │
+│  repository.upsert(PipelineResult)                   │
 └────────────────────────┬────────────────────────────┘
-                         │ per file
-                         ▼
-┌─────────────────────────────────────────────────────┐
-│                   Pipeline (analyzer.py)             │
-│                                                      │
-│  Stage 1: Transcription (faster-whisper)             │
-│     └─▶ Token Map [(word, end_time_s), ...]          │
-│                                                      │
-│  Stage 2: Boundary Analysis (Ollama / local LLM)     │
-│     └─▶ Anchor Word + Confidence Score → T_approx   │
-│                                                      │
-│  Stage 3: Silence Detection (pydub / ffmpeg)         │
-│     └─▶ T_exact                                      │
-│                                                      │
-│  Stage 4: Repository Update (pydantic + JSON)        │
-│     └─▶ repository.json entry written/updated        │
-└─────────────────────────────────────────────────────┘
                          │
                          ▼
               ┌──────────────────────┐
@@ -72,26 +73,32 @@ Implements three Stages sequentially — Transcription, Boundary Analysis, Silen
 
 #### Stage 2 — Boundary Analysis
 
-- Sends the full transcribed text block to a locally running Ollama instance (`http://localhost:11434/api/chat`) using JSON mode.
-- Model: `gemma2:2b` or `llama3.2:3b` (pulled automatically on first run).
+- Sends the full transcribed text block to the configured LLM (local Ollama by default; OpenAI-compatible API when `OPENAI_API_KEY` is set).
+- Default local model: `llama3.2:3b`. Configurable via `OLLAMA_MODEL`.
 - Prompt instructs the model to identify the **Anchor Word** — the last word of the Disclaimer.
 - Response schema: `{"disclaimer_end_word": str | null, "confidence_score": float}`. `null` means no Disclaimer detected — clean success, recorded as `exact_audio_skip_seconds: 0`.
-- If the response is malformed JSON: retry once. If still malformed: the file fails, recorded in Checkpoint DB with an error message; Pipeline moves to the next file.
-- If the Anchor Word cannot be located in the Token Map: the file fails, recorded in Checkpoint DB with an error; Pipeline moves to the next file.
+- If confidence is below `CONFIDENCE_THRESHOLD` (default 0.5), treated as NoDisclaimer.
+- If the response is malformed JSON: retry once. If still malformed: raises `BoundaryDetectionError`; `main.py` logs the failure and moves to the next chapter.
+- If the Anchor Word cannot be located in the Token Map: raises `AnchorWordNotFoundError`.
 - On success, maps the Anchor Word to its position in the Token Map to obtain **T_approx**.
+
+#### Stage 2b — Chapter Heading Detection (optional)
+
+- After T_approx is found, scans the Token Map up to 8 seconds ahead for a chapter heading keyword (`chapter`, `part`, `book`, `prologue`, `epilogue`, `preface`, `introduction`).
+- If a heading is found, the scan window for Stage 3 shifts: instead of scanning 3 s forward from T_approx, the pipeline scans the gap between T_approx and the heading word's end time (`T_chapter_end`) to find the last substantial silence→audio transition (i.e. where spoken content resumes after the heading).
+- Uses a looser silence threshold (−38 dBFS vs −45 dBFS) for this gap scan.
+- The reference point for the outlier check and logging becomes `T_ref = T_chapter_end` when this stage fires; otherwise `T_ref = T_approx`.
+- If no qualifying transition is found in the gap, falls back to `T_chapter_end` as T_exact.
 
 #### Stage 3 — Silence Detection
 
-- Extracts a 3-second audio window starting at T_approx using `pydub`.
-- Scans in 50 ms steps, measuring dBFS.
-- First step below −45 dBFS defines **T_exact**.
-- If no silence is found in the window, T_exact = T_approx (and the entry is flagged).
+- Standard path (no chapter heading): extracts a 3-second audio window starting at T_approx using `pydub`, scans in 50 ms steps, finds the first step below the Silence Threshold (−45 dBFS) — this is **T_exact**.
+- If no silence is found in the window, T_exact = T_approx.
+- Safety check: T_exact is clamped to 45 s.
+- Outlier flag: set if |T_exact − T_ref| > 4 s. Computed here in `analyzer.py` and included in `PipelineResult`.
+- Logs: `t_ref: <s>  t_exact: <s>  delta: <±s>  [OUTLIER]`
 
-#### Stage 4 — Repository Update
-
-- Validates the result with a `pydantic` schema.
-- Enforces safety checks: `exact_audio_skip_seconds` ≤ 45 s; Outlier flagged if |T_exact − T_approx| > 4 s.
-- Upserts the chapter entry into `repository.json`.
+The `PipelineResult` returned to `main.py` contains: `exact_audio_skip_seconds`, `detected_disclaimer_anchor_word`, `is_outlier`, `verified`. `main.py` then calls `repository.upsert()` to write it — the Pipeline has no dependency on the Repository module.
 
 ### `audio_fetcher.py` — Audio Fetcher
 
@@ -212,7 +219,15 @@ pip install -r requirements.txt
 python setup.py
 ```
 
-In development, set `OLLAMA_MODEL` env var to switch models without code changes. Set `WHISPER_MODEL` to switch between `tiny` and `base`. Set `SILENCE_THRESHOLD_DBFS` (default `−45.0`) to tune silence detection. Set `CONFIDENCE_THRESHOLD` (default `0.5`) to tune the LLM confidence cutoff.
+| Variable | Default | Description |
+|---|---|---|
+| `WHISPER_MODEL` | `base` | faster-whisper model (`tiny`, `base`) |
+| `OLLAMA_MODEL` | `llama3.2:3b` | Local LLM model (used when `OPENAI_API_KEY` is not set) |
+| `SILENCE_THRESHOLD_DBFS` | `−45.0` | dBFS level considered silence in Stage 3 |
+| `CONFIDENCE_THRESHOLD` | `0.5` | Minimum LLM confidence to accept an anchor word |
+| `OPENAI_API_KEY` | _(unset)_ | When set, routes LLM calls to an OpenAI-compatible API instead of Ollama |
+| `OPENAI_API_BASE` | `https://api.groq.com/openai/v1` | Base URL for the OpenAI-compatible endpoint |
+| `OPENAI_MODEL` | `llama-3.1-8b-instant` | Model name for the OpenAI-compatible endpoint |
 
 ---
 
