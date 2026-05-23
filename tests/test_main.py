@@ -263,7 +263,12 @@ class TestMain:
              patch("main.AudioFetcher.fetch", new=fake_fetch):
             m.main(books_file, repo, verify)
         data = json.loads(verify.read_text())
-        assert data == [CH1["listen_url"]]
+        assert data == [{
+            "listen_url": CH1["listen_url"],
+            "chapter_title": CH1["chapter_title"],
+            "title": BOOK_INFO["title"],
+            "verification_status": "pending",
+        }]
 
     def test_upsert_payload_shape(self, tmp_path):
         """Upsert receives a dict with book_metadata and chapter keys."""

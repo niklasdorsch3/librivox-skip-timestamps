@@ -24,6 +24,18 @@
     .btn-deny { background: #dc3545; color: #fff; font-size: 1rem; padding: 0.75rem 2rem; }
     .btn-before { background: #0d6efd; color: #fff; }
     .btn-seek { background: #6c757d; color: #fff; }
+    .btn-start { background: #0d6efd; color: #fff; }
+    /* deny modal */
+    .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; }
+    .modal-box { background:#fff; max-width:500px; margin:8% auto; padding:1.5rem; border-radius:8px; }
+    .modal-box h2 { margin:0 0 0.75rem; font-size:1.1rem; }
+    .modal-label { display:block; margin:0.75rem 0 0.25rem; font-weight:600; font-size:0.9rem; }
+    .modal-label .opt { color:#6c757d; font-weight:normal; }
+    .modal-input { width:130px; padding:0.4rem 0.6rem; border:1px solid #ced4da; border-radius:4px; font-size:0.95rem; }
+    .modal-select { width:100%; padding:0.4rem 0.6rem; border:1px solid #ced4da; border-radius:4px; font-size:0.9rem; }
+    .modal-textarea { width:100%; padding:0.4rem 0.6rem; border:1px solid #ced4da; border-radius:4px; font-size:0.9rem; resize:vertical; }
+    .modal-actions { display:flex; gap:0.75rem; margin-top:1.25rem; }
+    .modal-actions button { flex:1; }
     .message { padding: 1rem; border-radius: 8px; margin: 1rem 0; font-size: 1rem; }
     .msg-success { background: #d1e7dd; color: #0a3622; border: 1px solid #a3cfbb; }
     .msg-error { background: #f8d7da; color: #58151c; border: 1px solid #f1aeb5; }
@@ -73,6 +85,7 @@
     </div>
     <audio id="player" controls></audio>
     <div class="btn-row">
+      <button class="btn-start" onclick="playFromStart()" id="btn-start">Play from start</button>
       <button class="btn-before" onclick="playBefore()" id="btn-before">Play from 5s before</button>
       <button class="btn-seek" onclick="seekToSkip()" id="btn-seek">Seek to skip time</button>
     </div>
@@ -113,6 +126,35 @@
     <div class="denied-list" id="denied-list" style="display:none">
       <h3>Denied chapters</h3>
       <div id="denied-items"></div>
+    </div>
+  </div>
+
+  <!-- Deny feedback modal -->
+  <div id="deny-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+      <h2>Why is this timestamp wrong?</h2>
+      <p class="meta-line">Pipeline result: <strong id="modal-pipeline-time"></strong>s — use the player above to find the correct position.</p>
+
+      <label class="modal-label">Correct skip time (seconds)</label>
+      <input type="number" id="modal-timestamp" class="modal-input" step="0.1" min="0">
+
+      <label class="modal-label">Reason <span style="color:#dc3545">*</span></label>
+      <select id="modal-reason" class="modal-select">
+        <option value="">— select a reason —</option>
+        <option value="wrong_anchor_word">LLM picked wrong anchor word → tune OLLAMA_MODEL / OPENAI_MODEL</option>
+        <option value="false_positive">No disclaimer, pipeline added a skip → tune CONFIDENCE_THRESHOLD ↑</option>
+        <option value="false_negative">Disclaimer exists but pipeline returned 0s → tune CONFIDENCE_THRESHOLD ↓</option>
+        <option value="silence_detection">Anchor correct, silence position off → tune SILENCE_THRESHOLD_DBFS</option>
+        <option value="transcription_error">Whisper mis-transcribed audio → tune WHISPER_MODEL</option>
+      </select>
+
+      <label class="modal-label">Notes <span class="opt">(optional)</span></label>
+      <textarea id="modal-notes" class="modal-textarea" rows="2" placeholder="e.g. anchor was 'Chris' but should be 'domain'"></textarea>
+
+      <div class="modal-actions">
+        <button class="btn-deny" onclick="confirmDeny()">Confirm Deny ✗</button>
+        <button onclick="closeDenyModal()" style="background:#6c757d; color:#fff; padding:0.6rem 1.25rem; font-size:0.95rem; border:none; border-radius:5px; cursor:pointer;">Cancel</button>
+      </div>
     </div>
   </div>
 
@@ -248,51 +290,83 @@
     }
 
     function doAction(action) {
-      console.log('doAction called with:', action);
-      var flash = document.getElementById('action-flash');
-      if (action === 'approve') {
-        flash.textContent = '✓ Approved';
-        flash.className = 'action-flash flash-approve';
-      } else {
-        flash.textContent = '✗ Denied';
-        flash.className = 'action-flash flash-deny';
+      if (action === 'deny') { openDenyModal(); return; }
+      submitAction('approve', null);
+    }
+
+    function openDenyModal() {
+      document.getElementById('modal-pipeline-time').textContent = skipTime.toFixed(2);
+      document.getElementById('modal-timestamp').value = skipTime.toFixed(2);
+      document.getElementById('modal-reason').value = '';
+      document.getElementById('modal-reason').style.borderColor = '#ced4da';
+      document.getElementById('modal-notes').value = '';
+      document.getElementById('deny-modal').style.display = 'block';
+    }
+
+    function closeDenyModal() {
+      document.getElementById('deny-modal').style.display = 'none';
+    }
+
+    function confirmDeny() {
+      var reason = document.getElementById('modal-reason').value;
+      if (!reason) {
+        document.getElementById('modal-reason').style.borderColor = '#dc3545';
+        return;
       }
+      var humanTs = parseFloat(document.getElementById('modal-timestamp').value);
+      var notes = document.getElementById('modal-notes').value.trim();
+      closeDenyModal();
+      submitAction('deny', {
+        denial_reason: reason,
+        human_timestamp: isNaN(humanTs) ? null : humanTs,
+        notes: notes,
+      });
+    }
+
+    function submitAction(action, body) {
+      var flash = document.getElementById('action-flash');
+      flash.textContent = action === 'approve' ? '✓ Approved' : '✗ Denied';
+      flash.className = 'action-flash ' + (action === 'approve' ? 'flash-approve' : 'flash-deny');
       flash.style.display = '';
       document.querySelector('.card').classList.add('submitted');
       document.getElementById('loading').style.display = 'block';
-      document.getElementById('btn-approve').disabled = true;
-      document.getElementById('btn-deny').disabled = true;
-      document.getElementById('btn-before').disabled = true;
-      document.getElementById('btn-seek').disabled = true;
-      var url = '/api/' + action;
-      console.log('Fetching:', url);
-      fetch(url, {method: 'POST'})
+      ['btn-approve','btn-deny','btn-start','btn-before','btn-seek'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.disabled = true;
+      });
+      var fetchOpts = {method: 'POST'};
+      if (body) {
+        fetchOpts.headers = {'Content-Type': 'application/json'};
+        fetchOpts.body = JSON.stringify(body);
+      }
+      fetch('/api/' + action, fetchOpts)
         .then(function(r) {
-          console.log('Got response, status:', r.status);
-          if (!r.ok) {
-            console.error('Response not ok:', r.statusText);
-            throw new Error('Response status: ' + r.status);
-          }
+          if (!r.ok) throw new Error('Response status: ' + r.status);
           return r.json();
         })
         .then(function(data) {
-          console.log('Got JSON data:', data);
           render(data);
           loadStatus();
           document.getElementById('loading').style.display = 'none';
-          document.getElementById('btn-approve').disabled = false;
-          document.getElementById('btn-deny').disabled = false;
-          document.getElementById('btn-before').disabled = false;
-          document.getElementById('btn-seek').disabled = false;
+          ['btn-approve','btn-deny','btn-start','btn-before','btn-seek'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.disabled = false;
+          });
         })
         .catch(function(err) {
-          console.error('Caught error:', err);
+          console.error('Action error:', err);
           document.getElementById('loading').style.display = 'none';
-          document.getElementById('btn-approve').disabled = false;
-          document.getElementById('btn-deny').disabled = false;
-          document.getElementById('btn-before').disabled = false;
-          document.getElementById('btn-seek').disabled = false;
+          ['btn-approve','btn-deny','btn-start','btn-before','btn-seek'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.disabled = false;
+          });
         });
+    }
+
+    function playFromStart() {
+      var audio = document.getElementById('player');
+      audio.currentTime = 0;
+      audio.play();
     }
 
     function playBefore() {

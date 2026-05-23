@@ -488,6 +488,16 @@ def _post(url):
         return json.loads(r.read())
 
 
+def _post_json(url, data):
+    body = json.dumps(data).encode()
+    req = urllib.request.Request(
+        url, data=body, method="POST",
+        headers={"Content-Type": "application/json", "Content-Length": str(len(body))},
+    )
+    with urllib.request.urlopen(req) as r:
+        return json.loads(r.read())
+
+
 def test_server_get_session_returns_initial_state(server_session):
     _, base_url, session = server_session
     data = _get_json(f"{base_url}/api/session")
@@ -552,3 +562,102 @@ def test_server_unknown_route_returns_404(server_session):
     with pytest.raises(urllib.error.HTTPError) as exc_info:
         urllib.request.urlopen(req)
     assert exc_info.value.code == 404
+
+
+# ===========================================================================
+# verify.candidates — feedback in update_verification_status
+# ===========================================================================
+
+def test_update_verification_status_with_feedback_writes_denial_fields(tmp_path):
+    url = "http://example.com/1.mp3"
+    path = _write_verify_file(tmp_path, [_pending_entry(url)])
+    feedback = {"denial_reason": "silence_detection", "human_timestamp": 20.5, "notes": "threshold too tight"}
+
+    update_verification_status(url, "denied", path, feedback=feedback)
+
+    entry = load_verify_file(path)[0]
+    assert entry["verification_status"] == "denied"
+    assert entry["denial_reason"] == "silence_detection"
+    assert entry["denial_lever"] == "SILENCE_THRESHOLD_DBFS"
+    assert entry["human_timestamp"] == 20.5
+    assert entry["notes"] == "threshold too tight"
+
+
+def test_update_verification_status_approve_has_no_feedback_fields(tmp_path):
+    url = "http://example.com/1.mp3"
+    path = _write_verify_file(tmp_path, [_pending_entry(url)])
+
+    update_verification_status(url, "approved", path)
+
+    entry = load_verify_file(path)[0]
+    assert "denial_reason" not in entry
+    assert "denial_lever" not in entry
+
+
+def test_update_verification_status_empty_feedback_has_no_denial_fields(tmp_path):
+    url = "http://example.com/1.mp3"
+    path = _write_verify_file(tmp_path, [_pending_entry(url)])
+
+    update_verification_status(url, "denied", path, feedback={})
+
+    entry = load_verify_file(path)[0]
+    assert "denial_reason" not in entry
+    assert "denial_lever" not in entry
+
+
+def test_lever_mapping_all_reasons():
+    from verify.candidates import LEVER_MAP
+    expected = {
+        "wrong_anchor_word":   "OLLAMA_MODEL / OPENAI_MODEL",
+        "false_positive":      "CONFIDENCE_THRESHOLD",
+        "false_negative":      "CONFIDENCE_THRESHOLD",
+        "silence_detection":   "SILENCE_THRESHOLD_DBFS",
+        "transcription_error": "WHISPER_MODEL",
+    }
+    for reason, lever in expected.items():
+        assert LEVER_MAP[reason] == lever
+
+
+# ===========================================================================
+# verify.session — deny with feedback
+# ===========================================================================
+
+def test_session_deny_with_feedback_writes_feedback(tmp_path):
+    chapters = [_make_chapter(1)]
+    repo_path = _write_repo(tmp_path, chapters)
+    verify_file = _write_verify_file(tmp_path, [_pending_entry(chapters[0]["listen_url"])])
+    session = VerificationSession(chapters, repo_path, verify_file)
+    feedback = {"denial_reason": "wrong_anchor_word", "human_timestamp": 15.0, "notes": ""}
+
+    session.deny(feedback)
+
+    entry = load_verify_file(verify_file)[0]
+    assert entry["denial_reason"] == "wrong_anchor_word"
+    assert entry["denial_lever"] == "OLLAMA_MODEL / OPENAI_MODEL"
+    assert entry["human_timestamp"] == 15.0
+
+
+def test_session_deny_without_feedback_advances_cleanly(tmp_path):
+    chapters = [_make_chapter(1), _make_chapter(2)]
+    session = _make_session(tmp_path, chapters)
+
+    session.deny({})
+
+    assert session.current_index == 1
+    assert session.status == "active"
+
+
+# ===========================================================================
+# verify.server — deny parses JSON body
+# ===========================================================================
+
+def test_server_deny_with_json_body_writes_feedback(server_session):
+    _, base_url, session = server_session
+    feedback = {"denial_reason": "silence_detection", "human_timestamp": 12.5, "notes": "test note"}
+
+    _post_json(f"{base_url}/api/deny", feedback)
+
+    entry = next(e for e in load_verify_file(session._verify_file) if e["verification_status"] == "denied")
+    assert entry["denial_reason"] == "silence_detection"
+    assert entry["denial_lever"] == "SILENCE_THRESHOLD_DBFS"
+    assert entry["human_timestamp"] == 12.5

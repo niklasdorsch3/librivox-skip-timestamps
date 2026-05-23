@@ -14,6 +14,14 @@ REQUIRED_VERIFICATIONS = 10
 
 VerificationStatus = Literal["pending", "approved", "denied"]
 
+LEVER_MAP: dict[str, str] = {
+    "wrong_anchor_word":   "OLLAMA_MODEL / OPENAI_MODEL",
+    "false_positive":      "CONFIDENCE_THRESHOLD",
+    "false_negative":      "CONFIDENCE_THRESHOLD",
+    "silence_detection":   "SILENCE_THRESHOLD_DBFS",
+    "transcription_error": "WHISPER_MODEL",
+}
+
 
 def load_verify_file(verify_file_path: Path) -> list[dict]:
     """Load chapters_to_verify.json, supporting both old (list of URLs) and new (list of objects) formats."""
@@ -34,13 +42,24 @@ def save_verify_file(entries: list[dict], verify_file_path: Path) -> None:
 
 
 def update_verification_status(
-    listen_url: str, status: VerificationStatus, verify_file_path: Path
+    listen_url: str,
+    status: VerificationStatus,
+    verify_file_path: Path,
+    feedback: dict | None = None,
 ) -> None:
-    """Update the verification_status of a single entry in-place."""
+    """Update the verification_status of a single entry in-place.
+
+    When feedback is provided (non-empty dict), denial fields are written alongside the status.
+    """
     entries = load_verify_file(verify_file_path)
     for entry in entries:
         if entry["listen_url"] == listen_url:
             entry["verification_status"] = status
+            if feedback:
+                entry["denial_reason"] = feedback.get("denial_reason")
+                entry["denial_lever"] = LEVER_MAP.get(feedback.get("denial_reason", ""), "unknown")
+                entry["human_timestamp"] = feedback.get("human_timestamp")
+                entry["notes"] = feedback.get("notes", "")
             break
     save_verify_file(entries, verify_file_path)
 

@@ -6,9 +6,6 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
-import repository
-
-from .candidates import load_verify_file, update_verification_status
 from .session import VerificationSession
 
 DEFAULT_PORT = 8765
@@ -87,7 +84,9 @@ class _Handler(BaseHTTPRequestHandler):
             if session.status != "active":
                 threading.Thread(target=self.server.shutdown, daemon=True).start()
         elif self.path == "/api/deny":
-            session.deny()
+            length = int(self.headers.get("Content-Length", 0))
+            feedback = json.loads(self.rfile.read(length)) if length else {}
+            session.deny(feedback)
             chapter = session.current_chapter()
             print(f"[verify] denied — {chapter.get('chapter_title', '?') if chapter else '?'}")
             self._send_json(session.to_dict())
@@ -122,16 +121,7 @@ def run_verification(
     port: int = DEFAULT_PORT,
 ) -> VerificationSession:
     """Start the verification web server, block until done, return the session."""
-    all_entries = load_verify_file(verify_file_path)
-
-    def on_approve(url: str) -> None:
-        repository.mark_verified(url, repo_path)
-        update_verification_status(url, "approved", verify_file_path)
-
-    def on_deny(url: str) -> None:
-        update_verification_status(url, "denied", verify_file_path)
-
-    session = VerificationSession(candidates, on_approve, on_deny, all_entries, override)
+    session = VerificationSession(candidates, repo_path, verify_file_path, override)
 
     if not candidates:
         print("No chapters to verify. Run main.py first to generate new chapters.")
