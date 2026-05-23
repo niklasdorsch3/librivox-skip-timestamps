@@ -10,6 +10,7 @@ from .candidates import (
     CHAPTERS_TO_VERIFY_FILE,
     REPOSITORY_FILE,
     load_verification_candidates,
+    select_chapters,
 )
 from .server import DEFAULT_PORT, run_verification
 from .session import VerificationSession
@@ -65,7 +66,7 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     args = parser.parse_args()
 
-    candidates = load_verification_candidates(args.repo_path, args.verify_file)
+    candidates = select_chapters(load_verification_candidates(args.repo_path, args.verify_file))
     session = run_verification(candidates, args.repo_path, args.verify_file, args.override, args.port)
 
     if session.status == "denied":

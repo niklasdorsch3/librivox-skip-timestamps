@@ -6,7 +6,9 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
-from .candidates import load_verify_file
+import repository
+
+from .candidates import load_verify_file, update_verification_status
 from .session import VerificationSession
 
 DEFAULT_PORT = 8765
@@ -23,16 +25,10 @@ class _Handler(BaseHTTPRequestHandler):
             self._send_html(_HTML)
         elif self.path == "/api/session":
             session: VerificationSession = self.server.session  # type: ignore[attr-defined]
-            self._send_json({
-                "status": session.status,
-                "current_index": session.current_index,
-                "total": len(session.chapters),
-                "approved": session.approved,
-                "chapter": session.current_chapter(),
-                "message": session.message,
-            })
+            self._send_json(session.to_dict())
         elif self.path == "/api/status":
-            self._send_status()
+            session = self.server.session  # type: ignore[attr-defined]
+            self._send_json(session.status_data())
         elif self.path.startswith("/api/audio"):
             self._proxy_audio()
         else:
@@ -87,52 +83,19 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path == "/api/approve":
             session.approve()
             print(f"[verify] approved ({session.approved}/{len(session.chapters)})")
-            response = {
-                "status": session.status,
-                "current_index": session.current_index,
-                "total": len(session.chapters),
-                "approved": session.approved,
-                "chapter": session.current_chapter(),
-                "message": session.message,
-            }
-            self._send_json(response)
+            self._send_json(session.to_dict())
             if session.status != "active":
                 threading.Thread(target=self.server.shutdown, daemon=True).start()
         elif self.path == "/api/deny":
             session.deny()
             chapter = session.current_chapter()
             print(f"[verify] denied — {chapter.get('chapter_title', '?') if chapter else '?'}")
-            response = {
-                "status": session.status,
-                "current_index": session.current_index,
-                "total": len(session.chapters),
-                "approved": session.approved,
-                "chapter": chapter,
-                "message": session.message,
-            }
-            self._send_json(response)
+            self._send_json(session.to_dict())
             if session.status != "active":
                 threading.Thread(target=self.server.shutdown, daemon=True).start()
         else:
             self.send_response(404)
             self.end_headers()
-
-    def _send_status(self) -> None:
-        """Return aggregate counts and denied chapter list from the verify file."""
-        session: VerificationSession = self.server.session  # type: ignore[attr-defined]
-        entries = load_verify_file(session.verify_file_path)
-        counts = {"approved": 0, "denied": 0, "pending": 0}
-        denied_chapters = []
-        for e in entries:
-            status = e.get("verification_status", "pending")
-            counts[status] = counts.get(status, 0) + 1
-            if status == "denied":
-                denied_chapters.append({
-                    "listen_url": e.get("listen_url", ""),
-                    "chapter_title": e.get("chapter_title", ""),
-                    "title": e.get("title", ""),
-                })
-        self._send_json({"counts": counts, "denied_chapters": denied_chapters})
 
     def _send_html(self, content: str) -> None:
         body = content.encode("utf-8")
@@ -159,7 +122,16 @@ def run_verification(
     port: int = DEFAULT_PORT,
 ) -> VerificationSession:
     """Start the verification web server, block until done, return the session."""
-    session = VerificationSession(candidates, repo_path, verify_file_path, override)
+    all_entries = load_verify_file(verify_file_path)
+
+    def on_approve(url: str) -> None:
+        repository.mark_verified(url, repo_path)
+        update_verification_status(url, "approved", verify_file_path)
+
+    def on_deny(url: str) -> None:
+        update_verification_status(url, "denied", verify_file_path)
+
+    session = VerificationSession(candidates, on_approve, on_deny, all_entries, override)
 
     if not candidates:
         print("No chapters to verify. Run main.py first to generate new chapters.")

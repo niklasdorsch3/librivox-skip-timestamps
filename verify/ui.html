@@ -14,6 +14,7 @@
     .card p { margin: 0.25rem 0; font-size: 0.95rem; }
     .card a { color: #0d6efd; word-break: break-all; }
     .skip-time { font-size: 1.1rem; font-weight: bold; margin: 0.5rem 0; }
+    .meta-line { margin: 0.2rem 0; font-size: 0.88rem; color: #555; }
     .outlier { background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 0.5rem 0.75rem; margin: 0.5rem 0; font-weight: 600; }
     .prev-denied { background: #f8d7da; border: 1px solid #f1aeb5; border-radius: 4px; padding: 0.5rem 0.75rem; margin: 0.5rem 0; font-weight: 600; color: #58151c; }
     audio { width: 100%; margin: 0.75rem 0; }
@@ -32,6 +33,11 @@
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     #loading { display: none; margin: 1rem 0; font-size: 1rem; }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .card { transition: opacity 0.1s; }
+    .card.submitted { opacity: 0.45; pointer-events: none; }
+    .action-flash { border-radius: 5px; padding: 0.5rem 0.75rem; margin: 0.5rem 0; font-weight: 600; font-size: 0.95rem; }
+    .flash-approve { background: #d1e7dd; color: #0a3622; border: 1px solid #a3cfbb; }
+    .flash-deny    { background: #f8d7da; color: #58151c; border: 1px solid #f1aeb5; }
     /* status panel */
     .status-panel { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
     .status-panel h2 { margin: 0 0 0.75rem; font-size: 1rem; color: #444; }
@@ -59,15 +65,18 @@
       <p id="chapter-label"></p>
       <p><a id="listen-url" href="" target="_blank"></a></p>
       <p class="skip-time">Skip to: <span id="skip-seconds"></span>s</p>
+      <p class="meta-line">Anchor word: <strong id="anchor-word"></strong></p>
+      <p class="meta-line" id="file-name-line">File: <span id="file-name"></span></p>
       <div id="outlier" class="outlier" style="display:none;"></div>
       <div id="prev-denied" class="prev-denied" style="display:none;">⚠ Previously failed verification — review carefully</div>
+      <div id="action-flash" style="display:none;"></div>
     </div>
     <audio id="player" controls></audio>
     <div class="btn-row">
       <button class="btn-before" onclick="playBefore()" id="btn-before">Play from 5s before</button>
       <button class="btn-seek" onclick="seekToSkip()" id="btn-seek">Seek to skip time</button>
     </div>
-    <div id="loading"><span class="spinner"></span> Processing...</div>
+    <div id="loading"><span class="spinner"></span> Loading next chapter...</div>
     <div class="btn-row">
       <button class="btn-approve" onclick="doAction('approve')" id="btn-approve">Approve ✓</button>
       <button class="btn-deny" onclick="doAction('deny')" id="btn-deny">Deny ✗</button>
@@ -117,8 +126,9 @@
           console.log('Status not active, showing done message');
           document.getElementById('verify').style.display = 'none';
           document.getElementById('done').style.display = 'block';
-          var cls = data.status === 'complete' ? 'msg-success'
-                  : data.status === 'denied'   ? 'msg-error'
+          var cls = data.status === 'complete'    ? 'msg-success'
+                  : data.status === 'denied'      ? 'msg-error'
+                  : data.status === 'not_enough'  ? 'msg-error'
                   : 'msg-info';
           var el = document.getElementById('done-msg');
           el.className = 'message ' + cls;
@@ -144,6 +154,8 @@
           }
           return;
         }
+        document.querySelector('.card').classList.remove('submitted');
+        document.getElementById('action-flash').style.display = 'none';
         var ch = data.chapter;
         skipTime = ch.exact_audio_skip_seconds;
         console.log('Updating progress to chapter', data.current_index + 1, 'of', data.total);
@@ -160,6 +172,8 @@
         urlEl.href = ch.listen_url;
         urlEl.textContent = ch.listen_url;
         document.getElementById('skip-seconds').textContent = skipTime.toFixed(2);
+        document.getElementById('anchor-word').textContent = ch.detected_disclaimer_anchor_word || '(none)';
+        document.getElementById('file-name').textContent = ch.file_name || '';
         var outlierEl = document.getElementById('outlier');
         if (ch.is_outlier) {
           outlierEl.textContent = '[OUTLIER: high delta flagged during pipeline run — verify carefully]';
@@ -219,12 +233,32 @@
     }
 
     function load() {
-      fetch('/api/session').then(function(r) { return r.json(); }).then(render).catch(function(err) { console.error('Load error:', err); });
+      document.getElementById('loading').style.display = 'block';
+      fetch('/api/session')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          render(data);
+          document.getElementById('loading').style.display = 'none';
+        })
+        .catch(function(err) {
+          document.getElementById('loading').style.display = 'none';
+          console.error('Load error:', err);
+        });
       loadStatus();
     }
 
     function doAction(action) {
       console.log('doAction called with:', action);
+      var flash = document.getElementById('action-flash');
+      if (action === 'approve') {
+        flash.textContent = '✓ Approved';
+        flash.className = 'action-flash flash-approve';
+      } else {
+        flash.textContent = '✗ Denied';
+        flash.className = 'action-flash flash-deny';
+      }
+      flash.style.display = '';
+      document.querySelector('.card').classList.add('submitted');
       document.getElementById('loading').style.display = 'block';
       document.getElementById('btn-approve').disabled = true;
       document.getElementById('btn-deny').disabled = true;
