@@ -50,7 +50,7 @@
         "chapter_index": 3,
         "chapter_title": "Chapter 6",
         "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_06_austen_64kb.mp3",
-        "exact_audio_skip_seconds": 37.46,
+        "exact_audio_skip_seconds": 14.45,
         "detected_disclaimer_anchor_word": "Jane",
         "is_outlier": false,
         "verified": false
@@ -144,6 +144,25 @@
         "detected_disclaimer_anchor_word": "Shields",
         "is_outlier": false,
         "verified": true
+      }
+    ]
+  },
+  "0": {
+    "book_metadata": {
+      "librivox_project_id": 0,
+      "gutenberg_text_id": null,
+      "title": "prideandprejudice_06_austen_64kb"
+    },
+    "chapters": [
+      {
+        "file_name": "prideandprejudice_06_austen_64kb.mp3",
+        "chapter_index": 1,
+        "chapter_title": "prideandprejudice_06_austen_64kb",
+        "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_06_austen_64kb.mp3",
+        "exact_audio_skip_seconds": 14.45,
+        "detected_disclaimer_anchor_word": "Austen",
+        "is_outlier": false,
+        "verified": false
       }
     ]
   }

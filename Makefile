@@ -24,6 +24,10 @@ test:
 test-pipeline:
 	$(PYTEST_ENV) $(PYTHON) run_pipeline.py
 
+## Run pipeline on a chapter URL: make run-chapter URL=https://... [DEBUG=1]
+run-chapter:
+	$(PYTEST_ENV) $(PYTHON) run_pipeline.py --url $(URL) $(if $(DEBUG),--debug,)
+
 ## Run batch processor against books.txt
 run:
 	$(PYTEST_ENV) $(PYTHON) main.py
