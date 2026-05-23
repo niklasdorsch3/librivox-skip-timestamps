@@ -60,7 +60,11 @@ def main() -> None:
         },
     }
     repository.upsert(entry)
-    Path("chapters_to_verify.json").write_text(json.dumps([meta.listen_url], indent=2))
+    from verify.candidates import add_new_chapters
+    add_new_chapters(
+        [{"listen_url": meta.listen_url, "chapter_title": meta.chapter_title, "title": "Pride and Prejudice"}],
+        Path("chapters_to_verify.json"),
+    )
 
     print("\nWrote repository.json and chapters_to_verify.json.")
     print("Run  make verify  to open the verification UI.")

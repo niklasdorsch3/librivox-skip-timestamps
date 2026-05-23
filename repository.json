@@ -24,7 +24,7 @@
         "exact_audio_skip_seconds": 18.82,
         "detected_disclaimer_anchor_word": "Garwich",
         "is_outlier": false,
-        "verified": false
+        "verified": true
       }
     ]
   },

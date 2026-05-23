@@ -30,8 +30,8 @@ run:
 
 ## Launch verification UI
 verify:
-	$(PYTEST_ENV) $(PYTHON) verify.py
+	$(PYTEST_ENV) $(PYTHON) -m verify
 
 ## Remove generated files
 clean:
-	rm -f repository.json chapters_to_verify.json progress.txt
+	rm -f repository.json chapters_to_verify.json

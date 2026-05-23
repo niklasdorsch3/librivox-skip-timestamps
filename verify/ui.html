@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LibriVox Verification</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+    h1 { font-size: 1.4rem; margin-bottom: 0.5rem; }
+    .progress { color: #666; font-size: 0.9rem; margin-bottom: 1rem; }
+    .card { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 1.25rem; margin: 1rem 0; }
+    .card h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+    .card p { margin: 0.25rem 0; font-size: 0.95rem; }
+    .card a { color: #0d6efd; word-break: break-all; }
+    .skip-time { font-size: 1.1rem; font-weight: bold; margin: 0.5rem 0; }
+    .outlier { background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 0.5rem 0.75rem; margin: 0.5rem 0; font-weight: 600; }
+    .prev-denied { background: #f8d7da; border: 1px solid #f1aeb5; border-radius: 4px; padding: 0.5rem 0.75rem; margin: 0.5rem 0; font-weight: 600; color: #58151c; }
+    audio { width: 100%; margin: 0.75rem 0; }
+    .btn-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin: 0.75rem 0; }
+    button { padding: 0.6rem 1.25rem; font-size: 0.95rem; border: none; border-radius: 5px; cursor: pointer; }
+    .btn-approve { background: #198754; color: #fff; font-size: 1rem; padding: 0.75rem 2rem; }
+    .btn-deny { background: #dc3545; color: #fff; font-size: 1rem; padding: 0.75rem 2rem; }
+    .btn-before { background: #0d6efd; color: #fff; }
+    .btn-seek { background: #6c757d; color: #fff; }
+    .message { padding: 1rem; border-radius: 8px; margin: 1rem 0; font-size: 1rem; }
+    .msg-success { background: #d1e7dd; color: #0a3622; border: 1px solid #a3cfbb; }
+    .msg-error { background: #f8d7da; color: #58151c; border: 1px solid #f1aeb5; }
+    .msg-info { background: #cff4fc; color: #055160; border: 1px solid #9eeaf9; }
+    #done { display: none; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #0d6efd; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    #loading { display: none; margin: 1rem 0; font-size: 1rem; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    /* status panel */
+    .status-panel { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
+    .status-panel h2 { margin: 0 0 0.75rem; font-size: 1rem; color: #444; }
+    .stat-bar-wrap { display: flex; border-radius: 6px; overflow: hidden; height: 18px; margin-bottom: 0.75rem; background: #e9ecef; }
+    .stat-bar-seg { height: 100%; transition: width 0.3s; }
+    .seg-approved { background: #198754; }
+    .seg-denied   { background: #dc3545; }
+    .seg-pending  { background: #adb5bd; }
+    .stat-labels { display: flex; gap: 1.25rem; font-size: 0.88rem; }
+    .stat-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+    .denied-list { margin-top: 0.75rem; }
+    .denied-list h3 { font-size: 0.9rem; color: #58151c; margin: 0.5rem 0 0.35rem; }
+    .denied-item { background: #f8d7da; border: 1px solid #f1aeb5; border-radius: 5px; padding: 0.4rem 0.75rem; margin-bottom: 0.35rem; font-size: 0.85rem; color: #58151c; }
+    .denied-item a { color: #58151c; font-size: 0.8rem; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h1>LibriVox Verification</h1>
+
+  <div class="progress" id="progress"></div>
+
+  <div id="verify">
+    <div class="card">
+      <h2 id="book-title"></h2>
+      <p id="chapter-label"></p>
+      <p><a id="listen-url" href="" target="_blank"></a></p>
+      <p class="skip-time">Skip to: <span id="skip-seconds"></span>s</p>
+      <div id="outlier" class="outlier" style="display:none;"></div>
+      <div id="prev-denied" class="prev-denied" style="display:none;">⚠ Previously failed verification — review carefully</div>
+    </div>
+    <audio id="player" controls></audio>
+    <div class="btn-row">
+      <button class="btn-before" onclick="playBefore()" id="btn-before">Play from 5s before</button>
+      <button class="btn-seek" onclick="seekToSkip()" id="btn-seek">Seek to skip time</button>
+    </div>
+    <div id="loading"><span class="spinner"></span> Processing...</div>
+    <div class="btn-row">
+      <button class="btn-approve" onclick="doAction('approve')" id="btn-approve">Approve ✓</button>
+      <button class="btn-deny" onclick="doAction('deny')" id="btn-deny">Deny ✗</button>
+    </div>
+  </div>
+
+  <div id="done">
+    <div id="done-msg" class="message"></div>
+    <div id="chapter-details" style="display: none; margin-top: 2rem;">
+      <h2>Chapter Details</h2>
+      <div class="card">
+        <p><strong>Title:</strong> <span id="detail-title"></span></p>
+        <p><strong>Chapter:</strong> <span id="detail-chapter"></span></p>
+        <p><strong>Listen URL:</strong> <a id="detail-url" href="" target="_blank"></a></p>
+        <p><strong>Skip Time (detected):</strong> <span id="detail-skip"></span>s</p>
+        <p><strong>Anchor Word:</strong> <span id="detail-anchor"></span></p>
+        <p><strong>Is Outlier:</strong> <span id="detail-outlier"></span></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-panel" id="status-panel" style="margin-top:2rem">
+    <h2>Overall Status</h2>
+    <div class="stat-bar-wrap" id="stat-bar">
+      <div class="stat-bar-seg seg-approved" id="bar-approved" style="width:0%"></div>
+      <div class="stat-bar-seg seg-denied"   id="bar-denied"   style="width:0%"></div>
+      <div class="stat-bar-seg seg-pending"  id="bar-pending"  style="width:100%"></div>
+    </div>
+    <div class="stat-labels">
+      <span><span class="stat-dot" style="background:#198754"></span><span id="lbl-approved">0 approved</span></span>
+      <span><span class="stat-dot" style="background:#dc3545"></span><span id="lbl-denied">0 denied</span></span>
+      <span><span class="stat-dot" style="background:#adb5bd"></span><span id="lbl-pending">0 pending</span></span>
+    </div>
+    <div class="denied-list" id="denied-list" style="display:none">
+      <h3>Denied chapters</h3>
+      <div id="denied-items"></div>
+    </div>
+  </div>
+
+  <script>
+    var skipTime = 0;
+
+    function render(data) {
+      try {
+        console.log('render() called, status:', data.status);
+        if (data.status !== 'active') {
+          console.log('Status not active, showing done message');
+          document.getElementById('verify').style.display = 'none';
+          document.getElementById('done').style.display = 'block';
+          var cls = data.status === 'complete' ? 'msg-success'
+                  : data.status === 'denied'   ? 'msg-error'
+                  : 'msg-info';
+          var el = document.getElementById('done-msg');
+          el.className = 'message ' + cls;
+          el.textContent = data.message || 'Done.';
+
+          if (data.status === 'denied' && data.chapter) {
+            try {
+              var ch = data.chapter;
+              console.log('Showing chapter details for denied chapter:', ch);
+              document.getElementById('chapter-details').style.display = 'block';
+              document.getElementById('detail-title').textContent = ch.title || '';
+              document.getElementById('detail-chapter').textContent = 'Chapter ' + ch.chapter_index + ': ' + ch.chapter_title;
+              var urlEl = document.getElementById('detail-url');
+              urlEl.href = ch.listen_url;
+              urlEl.textContent = ch.listen_url;
+              document.getElementById('detail-skip').textContent = ch.exact_audio_skip_seconds.toFixed(2);
+              document.getElementById('detail-anchor').textContent = ch.detected_disclaimer_anchor_word || '(none)';
+              document.getElementById('detail-outlier').textContent = ch.is_outlier ? 'Yes' : 'No';
+              console.log('Chapter details displayed');
+            } catch (e) {
+              console.error('Error displaying chapter details:', e);
+            }
+          }
+          return;
+        }
+        var ch = data.chapter;
+        skipTime = ch.exact_audio_skip_seconds;
+        console.log('Updating progress to chapter', data.current_index + 1, 'of', data.total);
+        var denied = data.current_index - data.approved;
+        document.getElementById('progress').textContent =
+          'Chapter ' + (data.current_index + 1) + ' of ' + data.total
+          + ' — Approved: ' + data.approved
+          + (denied > 0 ? ', Denied: ' + denied : '');
+        console.log('Updated progress');
+        document.getElementById('book-title').textContent = ch.title || '';
+        document.getElementById('chapter-label').textContent =
+          'Chapter ' + ch.chapter_index + ': ' + ch.chapter_title;
+        var urlEl = document.getElementById('listen-url');
+        urlEl.href = ch.listen_url;
+        urlEl.textContent = ch.listen_url;
+        document.getElementById('skip-seconds').textContent = skipTime.toFixed(2);
+        var outlierEl = document.getElementById('outlier');
+        if (ch.is_outlier) {
+          outlierEl.textContent = '[OUTLIER: high delta flagged during pipeline run — verify carefully]';
+          outlierEl.style.display = '';
+        } else {
+          outlierEl.style.display = 'none';
+        }
+        var prevDeniedEl = document.getElementById('prev-denied');
+        prevDeniedEl.style.display = ch.verification_status === 'denied' ? '' : 'none';
+        var audio = document.getElementById('player');
+        audio.src = '/api/audio?url=' + encodeURIComponent(ch.listen_url);
+        console.log('Set audio src, calling load()');
+        audio.load();
+        audio.addEventListener('loadedmetadata', function() {
+          audio.currentTime = skipTime;
+        }, {once: true});
+        console.log('render() complete');
+      } catch (err) {
+        console.error('Error in render():', err);
+      }
+    }
+
+    function loadStatus() {
+      fetch('/api/status')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var c = data.counts;
+          var total = (c.approved || 0) + (c.denied || 0) + (c.pending || 0);
+          function pct(n) { return total === 0 ? 0 : Math.round(n / total * 100); }
+          document.getElementById('bar-approved').style.width = pct(c.approved || 0) + '%';
+          document.getElementById('bar-denied').style.width   = pct(c.denied   || 0) + '%';
+          document.getElementById('bar-pending').style.width  = pct(c.pending  || 0) + '%';
+          document.getElementById('lbl-approved').textContent = (c.approved || 0) + ' approved';
+          document.getElementById('lbl-denied').textContent   = (c.denied   || 0) + ' denied';
+          document.getElementById('lbl-pending').textContent  = (c.pending  || 0) + ' pending';
+          var deniedList = document.getElementById('denied-list');
+          var deniedItems = document.getElementById('denied-items');
+          if (data.denied_chapters && data.denied_chapters.length > 0) {
+            deniedItems.innerHTML = '';
+            data.denied_chapters.forEach(function(ch) {
+              var div = document.createElement('div');
+              div.className = 'denied-item';
+              var label = (ch.title ? ch.title + ' — ' : '') + (ch.chapter_title || ch.listen_url);
+              div.innerHTML = '<strong>' + escHtml(label) + '</strong><br><a href="' + escHtml(ch.listen_url) + '" target="_blank">' + escHtml(ch.listen_url) + '</a>';
+              deniedItems.appendChild(div);
+            });
+            deniedList.style.display = '';
+          } else {
+            deniedList.style.display = 'none';
+          }
+        })
+        .catch(function(err) { console.error('Status load error:', err); });
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function load() {
+      fetch('/api/session').then(function(r) { return r.json(); }).then(render).catch(function(err) { console.error('Load error:', err); });
+      loadStatus();
+    }
+
+    function doAction(action) {
+      console.log('doAction called with:', action);
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('btn-approve').disabled = true;
+      document.getElementById('btn-deny').disabled = true;
+      document.getElementById('btn-before').disabled = true;
+      document.getElementById('btn-seek').disabled = true;
+      var url = '/api/' + action;
+      console.log('Fetching:', url);
+      fetch(url, {method: 'POST'})
+        .then(function(r) {
+          console.log('Got response, status:', r.status);
+          if (!r.ok) {
+            console.error('Response not ok:', r.statusText);
+            throw new Error('Response status: ' + r.status);
+          }
+          return r.json();
+        })
+        .then(function(data) {
+          console.log('Got JSON data:', data);
+          render(data);
+          loadStatus();
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('btn-approve').disabled = false;
+          document.getElementById('btn-deny').disabled = false;
+          document.getElementById('btn-before').disabled = false;
+          document.getElementById('btn-seek').disabled = false;
+        })
+        .catch(function(err) {
+          console.error('Caught error:', err);
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('btn-approve').disabled = false;
+          document.getElementById('btn-deny').disabled = false;
+          document.getElementById('btn-before').disabled = false;
+          document.getElementById('btn-seek').disabled = false;
+        });
+    }
+
+    function playBefore() {
+      var audio = document.getElementById('player');
+      audio.currentTime = Math.max(0, skipTime - 5);
+      audio.play();
+    }
+
+    function seekToSkip() {
+      var audio = document.getElementById('player');
+      audio.currentTime = skipTime;
+    }
+
+    load();
+  </script>
+</body>
+</html>

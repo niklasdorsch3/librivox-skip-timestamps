@@ -78,7 +78,7 @@ def main(
     no_disclaimer = 0
     failed = 0
     failed_chapters: list[tuple[str, str, str]] = []
-    new_listen_urls: list[str] = []
+    new_chapters_to_verify: list[dict] = []
 
     for book_id in book_ids:
         try:
@@ -135,7 +135,11 @@ def main(
                     },
                 }
                 repository.upsert(entry, repo_path)
-                new_listen_urls.append(listen_url)
+                new_chapters_to_verify.append({
+                        "listen_url": listen_url,
+                        "chapter_title": chapter_title,
+                        "title": title,
+                    })
 
                 if result.exact_audio_skip_seconds == 0.0:
                     print(f"~ {title} — {chapter_title} (no disclaimer)")
@@ -150,7 +154,8 @@ def main(
                 failed += 1
                 failed_chapters.append((title, chapter_title, reason))
 
-    verify_file.write_text(json.dumps(new_listen_urls, indent=2))
+    from verify.candidates import add_new_chapters
+    add_new_chapters(new_chapters_to_verify, verify_file)
 
     print(
         f"\nSummary: {total} processed, {succeeded} succeeded, "
