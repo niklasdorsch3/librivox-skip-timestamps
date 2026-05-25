@@ -12,6 +12,10 @@ venv:
 	python3.10 -m venv .venv
 	.venv/bin/pip install -r requirements.txt requests static-ffmpeg pytest
 
+## Download a sample chapter and run the full pipeline end-to-end (validates your setup)
+demo:
+	$(PYTEST_ENV) $(PYTHON) run_pipeline.py --url https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_01-03_austen_64kb.mp3
+
 ## Run preflight checks (ffmpeg + ollama/groq)
 setup:
 	$(PYTHON) setup.py
