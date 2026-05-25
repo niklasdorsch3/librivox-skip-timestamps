@@ -107,7 +107,7 @@ A chapter entry where |T_approx − T_exact| exceeded 4 seconds during pipeline 
 
 ## Chapter Heading Gap Detection
 
-An optional sub-stage (Stage 2b) that fires when the Token Map contains a chapter heading keyword (`chapter`, `part`, `book`, `prologue`, `epilogue`, `preface`, `introduction`) within 8 seconds after T_approx. In this case, rather than scanning 3 seconds forward from T_approx for silence, the Pipeline scans the gap between T_approx and the heading word's end time to find where audio resumes after the heading is spoken. Uses a looser silence threshold (−38 dBFS). The reference point used for the Outlier check and the pipeline log becomes `T_ref = T_chapter_end` when this stage fires.
+An optional sub-stage (Stage 2b) that fires when the Token Map contains a chapter heading keyword (`chapter`, `part`, `book`, `prologue`, `epilogue`, `preface`, `introduction`) within 12 seconds after T_approx. The **last** matching keyword in the window is used — for multi-chapter files where the audio says "Chapter 4 and 5. Chapter 4.", the individual heading ("Chapter 4.") is used rather than the combined announcement. In this case, rather than scanning 3 seconds forward from T_approx for silence, the Pipeline scans the gap between T_approx and the heading word's end time to find where audio resumes after the heading is spoken. Uses a looser silence threshold (−38 dBFS). The reference point used for the Outlier check and the pipeline log becomes `T_ref = T_chapter_end` when this stage fires.
 
 ---
 

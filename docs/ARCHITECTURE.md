@@ -84,7 +84,8 @@ Implements three Stages sequentially — Transcription, Boundary Analysis, Silen
 
 #### Stage 2b — Chapter Heading Detection (optional)
 
-- After T_approx is found, scans the Token Map up to 8 seconds ahead for a chapter heading keyword (`chapter`, `part`, `book`, `prologue`, `epilogue`, `preface`, `introduction`).
+- After T_approx is found, scans the Token Map up to 12 seconds ahead for a chapter heading keyword (`chapter`, `part`, `book`, `prologue`, `epilogue`, `preface`, `introduction`).
+- Returns the **last** matching keyword in the window (not the first). This handles multi-chapter files where the audio contains a combined announcement ("Chapter 4 and 5.") followed by the individual heading ("Chapter 4.") — the correct `T_chapter_end` is the individual heading.
 - If a heading is found, the scan window for Stage 3 shifts: instead of scanning 3 s forward from T_approx, the pipeline scans the gap between T_approx and the heading word's end time (`T_chapter_end`) to find the last substantial silence→audio transition (i.e. where spoken content resumes after the heading).
 - Uses a looser silence threshold (−38 dBFS vs −45 dBFS) for this gap scan.
 - The reference point for the outlier check and logging becomes `T_ref = T_chapter_end` when this stage fires; otherwise `T_ref = T_approx`.

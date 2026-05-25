@@ -21,7 +21,7 @@ _MAX_AUDIO_SECONDS = 45
 _SILENCE_WINDOW_MS = 3000
 _SILENCE_STEP_MS = 50
 _OUTLIER_DELTA_SECONDS = 4.0
-_CHAPTER_HEADING_WINDOW_SECONDS = 8.0
+_CHAPTER_HEADING_WINDOW_SECONDS = 12.0
 _MIN_SILENCE_DURATION_MS = 300  # ignore sub-word dips shorter than this
 _GAP_SILENCE_THRESHOLD_DBFS = -38.0  # looser threshold for inter-segment gap detection
 _CHAPTER_HEADING_PATTERN = re.compile(r"^(chapter|part|book|prologue|epilogue|preface|introduction)$")
@@ -150,19 +150,25 @@ def _transcribe(audio_path: str, model_name: str) -> TokenMap:
 
 
 def _find_chapter_heading_end(token_map: TokenMap, t_approx: float) -> float | None:
-    """Return the end time of the chapter heading keyword (e.g. 'Chapter', 'Part') if
-    one appears within _CHAPTER_HEADING_WINDOW_SECONDS after t_approx, else None."""
+    """Return the end time of the last chapter heading keyword (e.g. 'Chapter', 'Part')
+    within _CHAPTER_HEADING_WINDOW_SECONDS after t_approx, else None.
+
+    Uses the last match rather than the first so that multi-chapter files such as
+    'Chapter 4 and 5. Chapter 4.' resolve to the individual chapter heading ('Chapter 4.')
+    rather than the combined announcement ('Chapter 4 and 5.').
+    """
     deadline = t_approx + _CHAPTER_HEADING_WINDOW_SECONDS
     i = 0
     while i < len(token_map) and token_map[i][1] <= t_approx:
         i += 1
+    last_heading_end: float | None = None
     while i < len(token_map) and token_map[i][1] <= deadline:
         word, end_time = token_map[i]
         if _CHAPTER_HEADING_PATTERN.match(_normalize(word)):
             logger.info("Chapter heading '%s' found at %.2fs", word.strip(), end_time)
-            return end_time
+            last_heading_end = end_time
         i += 1
-    return None
+    return last_heading_end
 
 
 def _detect_silence_before(

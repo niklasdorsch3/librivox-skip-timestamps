@@ -3,7 +3,11 @@
     "listen_url": "https://www.archive.org/download/prideprejudice_ver5_librivox/prideprejudice_01_austen_64kb.mp3",
     "chapter_title": "",
     "title": "",
-    "verification_status": "pending"
+    "verification_status": "denied",
+    "denial_reason": "transcription_error",
+    "denial_lever": "WHISPER_MODEL",
+    "human_timestamp": 18.96,
+    "notes": "could not load audio in app"
   },
   {
     "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_01-03_austen_64kb.mp3",
@@ -21,7 +25,7 @@
     "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_06_austen_64kb.mp3",
     "chapter_title": "",
     "title": "",
-    "verification_status": "pending"
+    "verification_status": "approved"
   },
   {
     "listen_url": "https://www.archive.org/download/pride_and_prejudice_librivox/prideandprejudice_07_austen_64kb.mp3",

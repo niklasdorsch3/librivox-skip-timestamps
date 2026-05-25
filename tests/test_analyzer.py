@@ -12,6 +12,7 @@ import pytest
 from pipeline.analyzer import (
     AnchorWordNotFoundError,
     ChapterMetadata,
+    _find_chapter_heading_end,
     run_pipeline,
 )
 from pipeline.boundary_detector import AnchorWord, NoDisclaimer
@@ -98,6 +99,51 @@ def test_log_line_emitted_with_t_approx_and_t_exact(meta, caplog):
 
     log_messages = [r.message for r in caplog.records]
     assert any("t_ref" in m and "t_exact" in m and "delta" in m for m in log_messages)
+
+
+# ---------------------------------------------------------------------------
+# _find_chapter_heading_end unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_find_chapter_heading_end_returns_none_when_no_heading():
+    token_map = [("This", 0.5), ("is", 0.8), ("text", 1.2)]
+    assert _find_chapter_heading_end(token_map, 0.0) is None
+
+
+def test_find_chapter_heading_end_returns_heading_within_window():
+    token_map = [("domain", 5.0), ("Chapter", 8.0), ("one", 8.5)]
+    result = _find_chapter_heading_end(token_map, 5.0)
+    assert result == pytest.approx(8.0)
+
+
+def test_find_chapter_heading_end_returns_none_when_heading_outside_window():
+    token_map = [("domain", 5.0), ("Chapter", 20.0), ("one", 20.5)]
+    assert _find_chapter_heading_end(token_map, 5.0) is None
+
+
+def test_find_chapter_heading_end_returns_last_match_for_multi_chapter():
+    # "Chapter 4 and 5. Chapter 4." — must return the LAST "Chapter", not the first.
+    token_map = [
+        ("domain", 10.0),
+        ("Chapter", 12.0), ("4", 12.3), ("and", 12.5), ("5", 12.7),
+        ("Chapter", 15.0), ("4", 15.3),
+    ]
+    result = _find_chapter_heading_end(token_map, 10.0)
+    assert result == pytest.approx(15.0)
+
+
+def test_find_chapter_heading_end_single_heading_unchanged():
+    token_map = [("domain", 10.0), ("Chapter", 14.0), ("one", 14.4)]
+    result = _find_chapter_heading_end(token_map, 10.0)
+    assert result == pytest.approx(14.0)
+
+
+def test_find_chapter_heading_end_matches_various_keywords():
+    for keyword in ("Part", "Book", "Prologue", "Epilogue", "Preface", "Introduction"):
+        token_map = [("domain", 5.0), (keyword, 8.0)]
+        result = _find_chapter_heading_end(token_map, 5.0)
+        assert result == pytest.approx(8.0), f"Expected match for keyword '{keyword}'"
 
 
 def test_outlier_flag_set_when_delta_exceeds_four_seconds(meta, monkeypatch):
