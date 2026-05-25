@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-import repository
+import pipeline.repository as repository
 from verify.candidates import (
     add_new_chapters,
     load_verification_candidates,

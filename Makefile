@@ -42,4 +42,4 @@ verify:
 
 ## Remove generated files
 clean:
-	rm -f repository.json chapters_to_verify.json
+	rm -f data/repository.json data/chapters_to_verify.json

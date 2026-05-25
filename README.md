@@ -6,7 +6,7 @@ LibriVox audiobooks begin each chapter with a spoken disclaimer. This repository
 
 ## Using the data
 
-Download `repository.json` and serve it from your own app. Each entry maps a LibriVox project ID to its chapters:
+Download `data/repository.json` and serve it from your own app. Each entry maps a LibriVox project ID to its chapters:
 
 ```json
 {

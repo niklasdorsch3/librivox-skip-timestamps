@@ -6,10 +6,10 @@ import sys
 from pathlib import Path
 from typing import Literal
 
-import repository
+import pipeline.repository as repository
 
-CHAPTERS_TO_VERIFY_FILE = Path("chapters_to_verify.json")
-REPOSITORY_FILE = Path("repository.json")
+CHAPTERS_TO_VERIFY_FILE = Path("data/chapters_to_verify.json")
+REPOSITORY_FILE = Path("data/repository.json")
 REQUIRED_VERIFICATIONS = 10
 
 VerificationStatus = Literal["pending", "approved", "denied"]

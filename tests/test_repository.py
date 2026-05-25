@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-import repository
+import pipeline.repository as repository
 
 
 BOOK_META = {

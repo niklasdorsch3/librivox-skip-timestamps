@@ -7,9 +7,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from analyzer import AnchorWordNotFoundError, PipelineResult
-from audio_fetcher import AudioFetchError
-from boundary_detector import BoundaryDetectionError
+from pipeline.analyzer import AnchorWordNotFoundError, PipelineResult
+from pipeline.audio_fetcher import AudioFetchError
+from pipeline.boundary_detector import BoundaryDetectionError
 import main as m
 
 

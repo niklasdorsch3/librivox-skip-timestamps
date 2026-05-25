@@ -10,7 +10,7 @@ from typing import Callable, Optional
 from faster_whisper import WhisperModel
 from pydub import AudioSegment
 
-from boundary_detector import AnchorWord, BoundaryResult, NoDisclaimer, detect_boundary
+from pipeline.boundary_detector import AnchorWord, BoundaryResult, NoDisclaimer, detect_boundary
 
 logger = logging.getLogger(__name__)
 

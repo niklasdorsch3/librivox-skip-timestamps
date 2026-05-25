@@ -2,7 +2,7 @@
 
 import json
 import pytest
-from validate_contribution import (
+from pipeline.validate_contribution import (
     build_comment,
     count_verified,
     find_new_chapters,

@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Optional
 
-import repository
+import pipeline.repository as repository
 
 from .candidates import REQUIRED_VERIFICATIONS, load_verify_file, update_verification_status
 

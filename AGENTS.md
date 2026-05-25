@@ -16,8 +16,8 @@ At every logical stopping point — after a feature is working, tests pass, or a
 
 Before marking any task done, verify:
 
-- `ARCHITECTURE.md` — updated if any module, data flow, pipeline stage, schema, or output format changed
-- `CONTEXT.md` — updated if any domain term, stage description, or system behaviour changed
+- `docs/ARCHITECTURE.md` — updated if any module, data flow, pipeline stage, schema, or output format changed
+- `docs/CONTEXT.md` — updated if any domain term, stage description, or system behaviour changed
 - `docs/adr/` — new ADR added (or existing updated) if an architectural decision was made or reversed
 
 If you are unsure whether a doc needs updating, check it. Stale documentation is treated as a bug. A codebase where docs and code disagree is actively harmful — it misleads future agents and makes the system harder to change safely.
@@ -36,4 +36,4 @@ Issues are tracked as markdown files under `docs/.scratch/`. See `docs/agents/is
 
 ### Domain docs
 
-Single-context layout — `ARCHITECTURE.md` (how it works) + `CONTEXT.md` (domain glossary) + `docs/adr/` (decisions) at the repo root.
+Single-context layout — `docs/ARCHITECTURE.md` (how it works) + `docs/CONTEXT.md` (domain glossary) + `docs/adr/` (decisions).

@@ -23,14 +23,14 @@ jobs:
 
       - name: Extract base repository.json
         run: |
-          git show origin/${{ github.base_ref }}:repository.json \
+          git show origin/${{ github.base_ref }}:data/repository.json \
             > /tmp/base_repository.json 2>/dev/null \
             || echo '{}' > /tmp/base_repository.json
 
       - name: Run validation
         run: |
-          python validate_contribution.py \
-            --pr-repo repository.json \
+          python pipeline/validate_contribution.py \
+            --pr-repo data/repository.json \
             --base-repo /tmp/base_repository.json \
             > /tmp/comment.txt
           cat /tmp/comment.txt

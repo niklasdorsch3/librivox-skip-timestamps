@@ -15,9 +15,9 @@ import static_ffmpeg
 
 static_ffmpeg.add_paths()
 
-import repository
-from analyzer import ChapterMetadata, run_pipeline
-from audio_fetcher import AudioFetcher
+import pipeline.repository as repository
+from pipeline.analyzer import ChapterMetadata, run_pipeline
+from pipeline.audio_fetcher import AudioFetcher
 
 _DEFAULT_AUDIO_SAMPLE = Path("audio_samples/prideandprejudice_01-03_austen_1min.wav")
 _DEFAULT_LISTEN_URL = (
@@ -64,10 +64,10 @@ def _run(audio_path: str, listen_url: str) -> None:
     from verify.candidates import add_new_chapters
     add_new_chapters(
         [{"listen_url": meta.listen_url, "chapter_title": meta.chapter_title, "title": chapter_title}],
-        Path("chapters_to_verify.json"),
+        Path("data/chapters_to_verify.json"),
     )
 
-    print("\nWrote repository.json and chapters_to_verify.json.")
+    print("\nWrote data/repository.json and data/chapters_to_verify.json.")
     print("Run  make verify  to open the verification UI.")
 
 

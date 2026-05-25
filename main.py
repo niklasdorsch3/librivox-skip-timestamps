@@ -7,14 +7,14 @@ from typing import Optional
 
 import requests
 
-import repository
-from analyzer import AnchorWordNotFoundError, ChapterMetadata, run_pipeline
-from audio_fetcher import AudioFetcher
+import pipeline.repository as repository
+from pipeline.analyzer import AnchorWordNotFoundError, ChapterMetadata, run_pipeline
+from pipeline.audio_fetcher import AudioFetcher
 
 LIBRIVOX_API_BASE = "https://librivox.org/api/feed/audiobooks"
 BOOKS_FILE = Path("books.txt")
-REPOSITORY_FILE = Path("repository.json")
-CHAPTERS_TO_VERIFY_FILE = Path("chapters_to_verify.json")
+REPOSITORY_FILE = Path("data/repository.json")
+CHAPTERS_TO_VERIFY_FILE = Path("data/chapters_to_verify.json")
 
 
 def fetch_book_info(book_id: int, session: requests.Session) -> dict:

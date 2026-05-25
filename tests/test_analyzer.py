@@ -9,12 +9,12 @@ import os
 
 import pytest
 
-from analyzer import (
+from pipeline.analyzer import (
     AnchorWordNotFoundError,
     ChapterMetadata,
     run_pipeline,
 )
-from boundary_detector import AnchorWord, NoDisclaimer
+from pipeline.boundary_detector import AnchorWord, NoDisclaimer
 
 FIXTURE = os.path.join(os.path.dirname(__file__), "fixtures", "sample_chapter.mp3")
 
@@ -93,7 +93,7 @@ def test_log_line_emitted_with_t_approx_and_t_exact(meta, caplog):
     def disclaimer(transcript: str):
         return AnchorWord(word="domain", confidence=0.99)
 
-    with caplog.at_level(logging.INFO, logger="analyzer"):
+    with caplog.at_level(logging.INFO, logger="pipeline.analyzer"):
         run_pipeline(FIXTURE, meta, detector=disclaimer)
 
     log_messages = [r.message for r in caplog.records]
@@ -104,9 +104,7 @@ def test_outlier_flag_set_when_delta_exceeds_four_seconds(meta, monkeypatch):
     # Use a very high silence threshold so Stage 3 never finds silence (t_exact = t_approx)
     # and manually check is_outlier behaviour via a different approach:
     # patch _detect_silence to simulate a >4s shift.
-    import analyzer
-
-    original = analyzer._detect_silence
+    import pipeline.analyzer as analyzer
 
     def fake_silence(audio_path, t_approx, threshold_dbfs):
         return t_approx + 5.0  # force delta = 5s > 4s threshold

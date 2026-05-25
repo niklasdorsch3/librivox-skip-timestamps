@@ -1,7 +1,7 @@
 # librevox-timestamps — Architecture
 
-> For domain terminology (Pipeline, Stage, Disclaimer, Repository, etc.) see `CONTEXT.md`.
-> For individual architectural decisions and their rationale see `docs/adr/`.
+> For domain terminology (Pipeline, Stage, Disclaimer, Repository, etc.) see [`CONTEXT.md`](CONTEXT.md).
+> For individual architectural decisions and their rationale see [`adr/`](adr/).
 
 ---
 

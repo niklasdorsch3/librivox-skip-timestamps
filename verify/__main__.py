@@ -36,7 +36,7 @@ def _offer_pr(session: VerificationSession) -> None:
     answer = input("\nCreate PR now? (y/n): ").strip().lower()
     if answer == "y":
         try:
-            subprocess.run(["git", "add", "repository.json"], check=True)
+            subprocess.run(["git", "add", "data/repository.json"], check=True)
             subprocess.run(["git", "commit", "-m", commit_msg], check=True)
             subprocess.run(
                 ["gh", "pr", "create", "--title", pr_title, "--body", pr_body],
@@ -47,7 +47,7 @@ def _offer_pr(session: VerificationSession) -> None:
             sys.exit(1)
     else:
         print("\nRun these commands to submit manually:")
-        print("  git add repository.json")
+        print("  git add data/repository.json")
         print(f"  git commit -m {json.dumps(commit_msg)}")
         print(f"  gh pr create --title {json.dumps(pr_title)} --body '...'")
 

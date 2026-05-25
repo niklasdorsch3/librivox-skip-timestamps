@@ -7,5 +7,5 @@ venv/
 .venv/
 checkpoint.db
 golden_set.json
-chapters_to_verify.json
+data/chapters_to_verify.json
 progress.txt

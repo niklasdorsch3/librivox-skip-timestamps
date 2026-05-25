@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 
-from audio_fetcher import AudioFetchError, AudioFetcher
+from pipeline.audio_fetcher import AudioFetchError, AudioFetcher
 
 
 # ---------------------------------------------------------------------------

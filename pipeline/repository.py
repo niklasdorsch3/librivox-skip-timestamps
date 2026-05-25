@@ -8,7 +8,7 @@ from typing import Optional
 
 from pydantic import BaseModel, model_validator
 
-REPOSITORY_PATH = Path("repository.json")
+REPOSITORY_PATH = Path("data/repository.json")
 
 
 class BookMetadata(BaseModel):

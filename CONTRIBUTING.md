@@ -8,7 +8,7 @@ forever.
 
 ## What a contribution looks like
 
-A pull request that adds up to **100 new chapter entries** to `repository.json`,
+A pull request that adds up to **100 new chapter entries** to `data/repository.json`,
 of which at least **10 are verified** — meaning you personally listened and
 confirmed the skip time is correct.
 
@@ -75,7 +75,7 @@ make run
 ```
 
 This fetches all chapters for each book, runs the timestamp pipeline, and writes
-results to `repository.json`. Already-processed chapters are skipped
+results to `data/repository.json`. Already-processed chapters are skipped
 automatically. Progress is logged to stdout.
 
 ### 3. Verify 10 chapters
@@ -99,7 +99,7 @@ The `verify` script offers to commit and run `gh pr create` automatically.
 Or manually:
 
 ```bash
-git add repository.json
+git add data/repository.json
 git commit -m "feat: add timestamps for <book title(s)>"
 git push origin main
 gh pr create --fill

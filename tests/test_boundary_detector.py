@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from boundary_detector import (
+from pipeline.boundary_detector import (
     AnchorWord,
     BoundaryDetectionError,
     NoDisclaimer,
