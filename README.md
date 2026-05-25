@@ -34,6 +34,33 @@ Download `data/repository.json` and serve it from your own app. Each entry maps 
 
 `exact_audio_skip_seconds` is the point at which the disclaimer ends and the literary content begins. `verified: true` means a human has listened and confirmed the timestamp. `is_outlier: true` means the pipeline's LLM and silence-detection results diverged significantly — treat these entries with extra care.
 
+## Requirements
+
+- Python 3.10+
+- A free [Groq API key](https://console.groq.com) *(recommended — no local GPU needed)*
+- `ffmpeg` — `brew install ffmpeg` / `sudo apt install ffmpeg` / [ffmpeg.org](https://ffmpeg.org/download.html)
+
+**Alternative (local, no API key):** Install [Ollama](https://ollama.com/download) and run `ollama pull llama3.2:3b`.
+
+## Setup
+
+```bash
+git clone https://github.com/niklasdorsch3/librivox-skip-timestamps.git
+cd librivox-skip-timestamps
+python3.10 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+cp .env.example .env
+# Edit .env and add your OPENAI_API_KEY (Groq key)
+```
+
+Verify everything works:
+
+```bash
+make demo
+```
+
 ## Running the pipeline on a single chapter
 
 The fastest way to try the pipeline is to point it at any LibriVox chapter URL:
