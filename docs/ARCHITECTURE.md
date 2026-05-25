@@ -14,7 +14,7 @@ This repository is a data companion to the **easy-audiobook** player. `repositor
 ```
 ┌─────────────────────────────────────────────────────┐
 │                   Batch Runner (main.py)             │
-│  reads books.txt · fetches chapters · skips known   │
+│  reads data/books.txt · fetches chapters · skips known   │
 │                                                      │
 │  ┌───────────────────────────────────────────────┐  │
 │  │              Pipeline (analyzer.py)           │  │
@@ -49,7 +49,7 @@ This repository is a data companion to the **easy-audiobook** player. `repositor
 
 ### `main.py` — Batch Runner
 
-Entry point. Reads a flat list of LibriVox book IDs from `books.txt` (one ID per line), fetches all chapters for each book from the LibriVox API, and skips any chapter whose `listen_url` already exists in `repository.json`. Failed chapters are logged to stdout with their error reason and retried on the next run. Downloads the chapter audio to a temporary file, invokes the Pipeline, then deletes the temporary file regardless of success or failure. Audio never persists to disk beyond the duration of a single chapter's processing.
+Entry point. Reads a flat list of LibriVox book IDs from `data/books.txt` (one ID per line), fetches all chapters for each book from the LibriVox API, and skips any chapter whose `listen_url` already exists in `repository.json`. Failed chapters are logged to stdout with their error reason and retried on the next run. Downloads the chapter audio to a temporary file, invokes the Pipeline, then deletes the temporary file regardless of success or failure. Audio never persists to disk beyond the duration of a single chapter's processing.
 
 Logs to stdout per chapter:
 - `✓ <title> — <chapter>` — completed successfully
@@ -235,7 +235,7 @@ python setup.py
 
 ```
 1. Fork the repo
-2. Add LibriVox book IDs to books.txt
+2. Add LibriVox book IDs to data/books.txt
 3. python main.py              # downloads + processes chapters, writes to repository.json
 4. python verify.py            # browser UI — approve 10 chapters, marks them verified: true
 5. git commit + push + open PR

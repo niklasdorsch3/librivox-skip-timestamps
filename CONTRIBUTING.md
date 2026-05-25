@@ -59,7 +59,7 @@ detected skip timestamp. If it completes without error, you're ready.
 
 ### 1. Pick books
 
-Add LibriVox book IDs to `books.txt`, one per line. Find IDs on
+Add LibriVox book IDs to `data/books.txt`, one per line. Find IDs on
 [librivox.org](https://librivox.org) — the ID is the number in the URL, e.g.
 `https://librivox.org/the-art-of-war-by-sun-tzu/` → `1234`.
 

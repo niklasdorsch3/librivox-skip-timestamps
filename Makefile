@@ -32,7 +32,7 @@ test-pipeline:
 run-chapter:
 	$(PYTEST_ENV) $(PYTHON) run_pipeline.py --url $(URL) $(if $(DEBUG),--debug,)
 
-## Run batch processor against books.txt
+## Run batch processor against data/books.txt
 run:
 	$(PYTEST_ENV) $(PYTHON) main.py
 

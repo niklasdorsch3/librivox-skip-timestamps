@@ -1,4 +1,4 @@
-"""Batch Runner — processes LibriVox books from books.txt."""
+"""Batch Runner — processes LibriVox books from data/books.txt."""
 
 import json
 import xml.etree.ElementTree as ET
@@ -12,7 +12,7 @@ from pipeline.analyzer import AnchorWordNotFoundError, ChapterMetadata, run_pipe
 from pipeline.audio_fetcher import AudioFetcher
 
 LIBRIVOX_API_BASE = "https://librivox.org/api/feed/audiobooks"
-BOOKS_FILE = Path("books.txt")
+BOOKS_FILE = Path("data/books.txt")
 REPOSITORY_FILE = Path("data/repository.json")
 CHAPTERS_TO_VERIFY_FILE = Path("data/chapters_to_verify.json")
 
@@ -63,7 +63,7 @@ def main(
     verify_file: Path = CHAPTERS_TO_VERIFY_FILE,
     session: Optional[requests.Session] = None,
 ) -> None:
-    """Read books.txt, process each chapter, write results to repository.json."""
+    """Read data/books.txt, process each chapter, write results to data/repository.json."""
     if session is None:
         session = requests.Session()
 
