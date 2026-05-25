@@ -1,79 +1,96 @@
 {
   "project": "LibriVox Skip Timestamps",
-  "branchName": "ralph/initial-pipeline",
-  "description": "Initial Pipeline - Generate and publish LibriVox chapter skip timestamps as a shared JSON dataset",
+  "description": "Community-maintained dataset of LibriVox disclaimer skip timestamps",
   "userStories": [
     {
       "id": "IS-00",
       "title": "Setup and fixtures",
-      "doc": "docs/.scratch/00-setup-and-fixtures.md",
-      "priority": 0,
+      "doc": null,
+      "status": "shipped",
       "passes": true,
       "blockedBy": [],
-      "notes": ""
+      "notes": "requirements.txt, setup.py, test fixtures"
     },
     {
       "id": "IS-01",
       "title": "Repository module",
-      "doc": "docs/.scratch/01-repository-module.md",
-      "priority": 1,
+      "doc": null,
+      "status": "shipped",
       "passes": true,
       "blockedBy": ["IS-00"],
-      "notes": ""
+      "notes": "pipeline/repository.py"
     },
     {
       "id": "IS-02",
       "title": "Boundary detector",
-      "doc": "docs/.scratch/02-boundary-detector.md",
-      "priority": 2,
+      "doc": null,
+      "status": "shipped",
       "passes": true,
       "blockedBy": ["IS-00"],
-      "notes": ""
+      "notes": "pipeline/boundary_detector.py"
     },
     {
       "id": "IS-03",
       "title": "Audio fetcher",
-      "doc": "docs/.scratch/03-audio-fetcher.md",
-      "priority": 3,
+      "doc": null,
+      "status": "shipped",
       "passes": true,
       "blockedBy": ["IS-00"],
-      "notes": ""
+      "notes": "pipeline/audio_fetcher.py"
     },
     {
       "id": "IS-04",
       "title": "Pipeline",
-      "doc": "docs/.scratch/04-pipeline.md",
-      "priority": 4,
+      "doc": null,
+      "status": "shipped",
       "passes": true,
       "blockedBy": ["IS-00", "IS-02", "IS-03"],
-      "notes": ""
+      "notes": "pipeline/analyzer.py"
     },
     {
       "id": "IS-05",
       "title": "Batch runner",
-      "doc": "docs/.scratch/05-batch-runner.md",
-      "priority": 5,
+      "doc": null,
+      "status": "shipped",
       "passes": true,
       "blockedBy": ["IS-00", "IS-01", "IS-03", "IS-04"],
-      "notes": ""
+      "notes": "main.py"
     },
     {
       "id": "IS-06",
       "title": "Verification script",
-      "doc": "docs/.scratch/06-verification-script.md",
-      "priority": 6,
+      "doc": null,
+      "status": "shipped",
       "passes": true,
       "blockedBy": ["IS-00", "IS-01", "IS-03"],
-      "notes": ""
+      "notes": "verify/"
     },
     {
       "id": "IS-07",
       "title": "CI validation",
-      "doc": "docs/.scratch/07-ci-validation.md",
-      "priority": 7,
+      "doc": null,
+      "status": "shipped",
       "passes": true,
       "blockedBy": ["IS-00", "IS-01"],
-      "notes": ""
+      "notes": ".github/workflows/validate-contribution.yml, pipeline/validate_contribution.py"
+    },
+    {
+      "id": "IS-08",
+      "title": "Deny feedback with pipeline lever mapping",
+      "doc": null,
+      "status": "shipped",
+      "passes": true,
+      "blockedBy": ["IS-06"],
+      "notes": "verify/candidates.py LEVER_MAP, denial_reason/lever/human_timestamp fields in chapters_to_verify.json"
+    },
+    {
+      "id": "IS-09",
+      "title": "Groq default path — zero-ffmpeg contributor setup",
+      "doc": "docs/.scratch/groq-default-path-prd.md",
+      "status": "ready-for-agent",
+      "passes": false,
+      "blockedBy": [],
+      "notes": "Make Groq + API key the hero setup path; replace system ffmpeg with static-ffmpeg across all entry points; investigate Groq Whisper API"
     }
   ]
 }
