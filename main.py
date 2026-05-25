@@ -65,6 +65,7 @@ def main(
     repo_path: Path = REPOSITORY_FILE,
     verify_file: Path = CHAPTERS_TO_VERIFY_FILE,
     session: Optional[requests.Session] = None,
+    limit: Optional[int] = None,
 ) -> None:
     """Read data/books.txt, process each chapter, write results to data/repository.json."""
     if session is None:
@@ -101,6 +102,10 @@ def main(
             continue
 
         for chapter in chapters:
+            if limit is not None and total >= limit:
+                break
+
+
             listen_url = chapter["listen_url"]
             chapter_title = chapter["chapter_title"]
 
@@ -157,6 +162,9 @@ def main(
                 failed += 1
                 failed_chapters.append((title, chapter_title, reason))
 
+        if limit is not None and total >= limit:
+            break
+
     from verify.candidates import add_new_chapters
     add_new_chapters(new_chapters_to_verify, verify_file)
 
@@ -171,4 +179,15 @@ def main(
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Process LibriVox books from data/books.txt.")
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Stop after processing N chapters (default: no limit).",
+    )
+    args = parser.parse_args()
+    main(limit=args.limit)

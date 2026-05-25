@@ -32,9 +32,9 @@ test-pipeline:
 run-chapter:
 	$(PYTEST_ENV) $(PYTHON) run_pipeline.py --url $(URL) $(if $(DEBUG),--debug,)
 
-## Run batch processor against data/books.txt
+## Run batch processor against data/books.txt [LIMIT=N to stop after N chapters]
 run:
-	$(PYTEST_ENV) $(PYTHON) main.py
+	$(PYTEST_ENV) $(PYTHON) main.py $(if $(LIMIT),--limit $(LIMIT),)
 
 ## Launch verification UI
 verify:

@@ -270,6 +270,28 @@ class TestMain:
             "verification_status": "pending",
         }]
 
+    def test_limit_stops_after_n_chapters(self, tmp_path):
+        books_file, repo, verify = setup_files(tmp_path, [101])
+        with patch.object(m, "fetch_book_info", return_value=BOOK_INFO), \
+             patch.object(m, "fetch_chapters", return_value=[CH1, CH2, CH3]), \
+             patch("main.repository.contains", return_value=False), \
+             patch("main.repository.upsert") as mock_upsert, \
+             patch.object(m, "run_pipeline", return_value=FAKE_OK), \
+             patch("main.AudioFetcher.fetch", new=fake_fetch):
+            m.main(books_file, repo, verify, limit=2)
+        assert mock_upsert.call_count == 2
+
+    def test_limit_none_processes_all(self, tmp_path):
+        books_file, repo, verify = setup_files(tmp_path, [101])
+        with patch.object(m, "fetch_book_info", return_value=BOOK_INFO), \
+             patch.object(m, "fetch_chapters", return_value=[CH1, CH2, CH3]), \
+             patch("main.repository.contains", return_value=False), \
+             patch("main.repository.upsert") as mock_upsert, \
+             patch.object(m, "run_pipeline", return_value=FAKE_OK), \
+             patch("main.AudioFetcher.fetch", new=fake_fetch):
+            m.main(books_file, repo, verify, limit=None)
+        assert mock_upsert.call_count == 3
+
     def test_upsert_payload_shape(self, tmp_path):
         """Upsert receives a dict with book_metadata and chapter keys."""
         books_file, repo, verify = setup_files(tmp_path, [101])
