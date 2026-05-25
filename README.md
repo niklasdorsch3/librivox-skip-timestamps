@@ -34,6 +34,13 @@ Download `data/repository.json` and serve it from your own app. Each entry maps 
 
 `exact_audio_skip_seconds` is the point at which the disclaimer ends and the literary content begins. `verified: true` means a human has listened and confirmed the timestamp. `is_outlier: true` means the pipeline's LLM and silence-detection results diverged significantly — treat these entries with extra care.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full setup guide, contribution loop, and tuning options.
+
+The short version: add LibriVox book IDs to `data/books.txt`, run `make run`, verify 10 chapters with `make verify`, open a PR.
+
+
 ## Requirements
 
 - Python 3.10+
@@ -80,12 +87,6 @@ Both commands write the result to `data/repository.json` and `data/chapters_to_v
 ```bash
 make verify
 ```
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full setup guide, contribution loop, and tuning options.
-
-The short version: add LibriVox book IDs to `data/books.txt`, run `make run`, verify 10 chapters with `make verify`, open a PR.
 
 ## Development
 
