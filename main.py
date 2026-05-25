@@ -122,7 +122,9 @@ def main(
                     file_name=chapter["file_name"],
                 )
 
+                print(f"  ↓ {title} — {chapter_title}", flush=True)
                 with AudioFetcher.fetch(listen_url, session) as audio_path:
+                    print(f"  ⚙ {title} — {chapter_title}", flush=True)
                     result = run_pipeline(audio_path, chapter_meta)
 
                 entry = {
@@ -150,15 +152,15 @@ def main(
                     })
 
                 if result.exact_audio_skip_seconds == 0.0:
-                    print(f"~ {title} — {chapter_title} (no disclaimer)")
+                    print(f"~ {title} — {chapter_title} (no disclaimer)", flush=True)
                     no_disclaimer += 1
                 else:
-                    print(f"✓ {title} — {chapter_title}")
+                    print(f"✓ {title} — {chapter_title}", flush=True)
                     succeeded += 1
 
             except Exception as exc:
                 reason = str(exc) or type(exc).__name__
-                print(f"✗ {title} — {chapter_title} — {reason}")
+                print(f"✗ {title} — {chapter_title} — {reason}", flush=True)
                 failed += 1
                 failed_chapters.append((title, chapter_title, reason))
 
