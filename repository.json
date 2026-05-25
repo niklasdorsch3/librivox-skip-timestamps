@@ -93,7 +93,7 @@
         "exact_audio_skip_seconds": 25.029999999999998,
         "detected_disclaimer_anchor_word": "Mackenzie",
         "is_outlier": false,
-        "verified": false
+        "verified": true
       },
       {
         "file_name": "prideandprejudice_12-13_austen_64kb.mp3",
