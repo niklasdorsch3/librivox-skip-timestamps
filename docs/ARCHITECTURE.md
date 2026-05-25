@@ -7,7 +7,7 @@
 
 ## System Overview
 
-A local Python pipeline that processes LibriVox audio files and produces a public JSON Repository of per-chapter skip timestamps. By default all inference runs locally via faster-whisper and Ollama. An optional OpenAI-compatible API path (e.g. Groq) is available when `OPENAI_API_KEY` is set — see the environment table below.
+A local Python pipeline that processes LibriVox audio files and produces a public JSON Repository of per-chapter skip timestamps. By default the LLM stage routes through an OpenAI-compatible API (e.g. Groq) when `OPENAI_API_KEY` is set — this is the recommended path and requires no local services. When `OPENAI_API_KEY` is not set, the pipeline falls back to a local Ollama instance. Transcription always runs locally via `faster-whisper`. `ffmpeg` is provided automatically by `static-ffmpeg`; no system install is required.
 
 This repository is a data companion to the **easy-audiobook** player. `repository.json` is a public dataset — consumers download it and serve it themselves from within their own app. It is not fetched at runtime from this repo.
 
@@ -58,7 +58,7 @@ Logs to stdout per chapter:
 
 At the end of each run, prints a summary: total processed, succeeded, no-disclaimer, failed. Failed chapters are listed with their error reason so they can be investigated or re-run.
 
-Writes a manifest of all new chapters generated in the run to `chapters_to_verify.json` (a JSON array of `listen_url` strings). The Verification Script uses this to scope its random sample to only this run's output.
+Writes a manifest of all new chapters generated in the run to `chapters_to_verify.json` (a JSON array of objects with `listen_url`, `chapter_title`, and `title`). The Verification Script uses this to scope its random sample to only this run's output.
 
 ### `analyzer.py` — Pipeline
 
@@ -205,17 +205,17 @@ chapter listen_url
 | Dependency | Role |
 |---|---|
 | `faster-whisper` | Local STT — word-level transcription |
-| `ollama` (CLI) | Local LLM runtime |
+| `ollama` (CLI) | Local LLM runtime (optional; used when `OPENAI_API_KEY` is not set) |
 | `pydub` | Audio windowing and dBFS measurement |
-| `ffmpeg` | System dependency required by pydub |
+| `static-ffmpeg` | Bundles a static ffmpeg binary — no system install required |
 | `pydantic` | Schema validation for Repository output |
-| `requests` | HTTP client for Ollama REST API |
+| `requests` | HTTP client for Ollama / OpenAI-compatible REST API |
 
 **Setup:**
 
 ```bash
 pip install -r requirements.txt
-# verifies ffmpeg and ollama are installed, pulls model if needed
+# verifies static-ffmpeg and Groq/Ollama are ready
 python setup.py
 ```
 

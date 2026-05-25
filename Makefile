@@ -10,7 +10,7 @@ export
 ## Create virtualenv and install dependencies
 venv:
 	python3.10 -m venv .venv
-	.venv/bin/pip install -r requirements.txt requests static-ffmpeg pytest
+	.venv/bin/pip install -r requirements.txt pytest
 
 ## Download a sample chapter and run the full pipeline end-to-end (validates your setup)
 demo:

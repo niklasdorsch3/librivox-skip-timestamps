@@ -6,8 +6,8 @@
       "id": "IS-09",
       "title": "Groq default path — zero-ffmpeg contributor setup",
       "doc": "docs/.scratch/groq-default-path-prd.md",
-      "status": "ready-for-agent",
-      "passes": false,
+      "status": "done",
+      "passes": true,
       "blockedBy": [],
       "notes": "Make Groq + API key the hero setup path; replace system ffmpeg with static-ffmpeg across all entry points; investigate Groq Whisper API"
     }

@@ -2,3 +2,4 @@ faster-whisper
 pydub
 requests
 pydantic
+static-ffmpeg

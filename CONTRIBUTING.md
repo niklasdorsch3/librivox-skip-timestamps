@@ -21,10 +21,9 @@ Violations are warnings, not blockers, but reviewers will ask you to fix them.
 
 - Python 3.10+
 - A free [Groq API key](https://console.groq.com) *(recommended — no local GPU needed)*
-- `ffmpeg` installed on your system
-  - macOS: `brew install ffmpeg`
-  - Ubuntu/Debian: `sudo apt install ffmpeg`
-  - Windows: [ffmpeg.org/download](https://ffmpeg.org/download.html)
+
+> **No system dependencies required.** `ffmpeg` is bundled automatically via
+> `static-ffmpeg` — no `brew install ffmpeg` or `apt install ffmpeg` needed.
 
 **Alternative (local, no API key):** Install [Ollama](https://ollama.com/download),
 then run `ollama pull llama3.2:3b`. Set `OLLAMA_MODEL=llama3.2:3b` in your `.env`.

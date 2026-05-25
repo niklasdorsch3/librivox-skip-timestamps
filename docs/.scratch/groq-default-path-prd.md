@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Make Groq the default, zero-ffmpeg setup path
 

@@ -19,6 +19,8 @@ import pipeline.repository as repository
 from pipeline.analyzer import ChapterMetadata, run_pipeline
 from pipeline.audio_fetcher import AudioFetcher
 
+# Pre-downloaded 1-minute clip for fast offline testing; the URL provides the
+# canonical identity (file name, title, listen_url) written to the output JSON.
 _DEFAULT_AUDIO_SAMPLE = Path("audio_samples/prideandprejudice_01-03_austen_1min.wav")
 _DEFAULT_LISTEN_URL = (
     "https://www.archive.org/download/pride_and_prejudice_librivox/"

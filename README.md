@@ -45,7 +45,8 @@ The short version: add LibriVox book IDs to `data/books.txt`, run `make run`, ve
 
 - Python 3.10+
 - A free [Groq API key](https://console.groq.com) *(recommended — no local GPU needed)*
-- `ffmpeg` — `brew install ffmpeg` / `sudo apt install ffmpeg` / [ffmpeg.org](https://ffmpeg.org/download.html)
+
+> **No system dependencies required.** `ffmpeg` is bundled automatically via `static-ffmpeg` when you run `pip install -r requirements.txt`.
 
 **Alternative (local, no API key):** Install [Ollama](https://ollama.com/download) and run `ollama pull llama3.2:3b`.
 
@@ -89,6 +90,8 @@ make verify
 ```
 
 ## Development
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a full walkthrough of the pipeline stages, module responsibilities, and data flow.
 
 See [docs/.scratch/](./docs/.scratch/) for user stories and acceptance criteria.
 

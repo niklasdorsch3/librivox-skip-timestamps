@@ -6,6 +6,9 @@ from pathlib import Path
 from typing import Optional
 
 import requests
+import static_ffmpeg
+
+static_ffmpeg.add_paths()
 
 import pipeline.repository as repository
 from pipeline.analyzer import AnchorWordNotFoundError, ChapterMetadata, run_pipeline
