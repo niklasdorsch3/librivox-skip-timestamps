@@ -53,7 +53,7 @@
         "exact_audio_skip_seconds": 14.45,
         "detected_disclaimer_anchor_word": "Jane",
         "is_outlier": false,
-        "verified": false
+        "verified": true
       },
       {
         "file_name": "prideandprejudice_07_austen_64kb.mp3",
