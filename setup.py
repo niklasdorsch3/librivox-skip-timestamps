@@ -10,8 +10,28 @@ Run once after installing dependencies: python setup.py
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 import requests
+
+
+def _load_dotenv(path: str = ".env") -> None:
+    """Parse a .env file and inject missing keys into os.environ."""
+    p = Path(path)
+    if not p.exists():
+        return
+    for line in p.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip()
+        if key and value and key not in os.environ:
+            os.environ[key] = value
+
+
+_load_dotenv()
 
 DEFAULT_OLLAMA_MODEL = "llama3.2:3b"
 OLLAMA_BASE_URL = "http://localhost:11434"
