@@ -6,6 +6,7 @@ requiring a running Ollama instance.
 
 import logging
 import os
+import re
 
 import pytest
 
@@ -34,6 +35,14 @@ def _no_disclaimer(transcript: str) -> NoDisclaimer:
     return NoDisclaimer()
 
 
+def _last_index_of(word: str, transcript: str) -> int:
+    """Return the last token index for *word* in an indexed transcript '[0]w1 [1]w2 ...'"""
+    matches = [int(m.group(1)) for m in re.finditer(rf"\[(\d+)\]{re.escape(word)}", transcript)]
+    if not matches:
+        raise ValueError(f"'{word}' not found in indexed transcript")
+    return matches[-1]
+
+
 def test_no_disclaimer_returns_zero_skip(meta):
     result = run_pipeline(FIXTURE, meta, detector=_no_disclaimer)
     assert result.exact_audio_skip_seconds == 0.0
@@ -46,7 +55,7 @@ def test_low_confidence_treated_as_no_disclaimer(meta, monkeypatch):
     monkeypatch.setenv("CONFIDENCE_THRESHOLD", "0.9")
 
     def low_conf(transcript: str):
-        return AnchorWord(word="domain", confidence=0.3)
+        return AnchorWord(index=0, confidence=0.3)
 
     result = run_pipeline(FIXTURE, meta, detector=low_conf)
     assert result.exact_audio_skip_seconds == 0.0
@@ -55,16 +64,16 @@ def test_low_confidence_treated_as_no_disclaimer(meta, monkeypatch):
 
 def test_anchor_word_not_found_raises(meta):
     def bad_anchor(transcript: str):
-        return AnchorWord(word="XYZNOTFOUND99", confidence=0.99)
+        return AnchorWord(index=9999, confidence=0.99)
 
-    with pytest.raises(AnchorWordNotFoundError, match="XYZNOTFOUND99"):
+    with pytest.raises(AnchorWordNotFoundError, match="9999"):
         run_pipeline(FIXTURE, meta, detector=bad_anchor)
 
 
 def test_disclaimer_detected_returns_skip_seconds(meta):
     # "domain" is the last word of the disclaimer in the fixture (at ~6.06 s)
     def disclaimer(transcript: str):
-        return AnchorWord(word="domain", confidence=0.99)
+        return AnchorWord(index=_last_index_of("domain", transcript), confidence=0.99)
 
     result = run_pipeline(FIXTURE, meta, detector=disclaimer)
     assert result.exact_audio_skip_seconds >= 0.0
@@ -84,7 +93,7 @@ def test_silence_threshold_env_var_respected(meta, monkeypatch):
     monkeypatch.setenv("SILENCE_THRESHOLD_DBFS", "0.0")
 
     def disclaimer(transcript: str):
-        return AnchorWord(word="domain", confidence=0.99)
+        return AnchorWord(index=_last_index_of("domain", transcript), confidence=0.99)
 
     result = run_pipeline(FIXTURE, meta, detector=disclaimer)
     assert result.exact_audio_skip_seconds >= 0.0
@@ -92,7 +101,7 @@ def test_silence_threshold_env_var_respected(meta, monkeypatch):
 
 def test_log_line_emitted_with_t_approx_and_t_exact(meta, caplog):
     def disclaimer(transcript: str):
-        return AnchorWord(word="domain", confidence=0.99)
+        return AnchorWord(index=_last_index_of("domain", transcript), confidence=0.99)
 
     with caplog.at_level(logging.INFO, logger="pipeline.analyzer"):
         run_pipeline(FIXTURE, meta, detector=disclaimer)
@@ -147,9 +156,6 @@ def test_find_chapter_heading_end_matches_various_keywords():
 
 
 def test_outlier_flag_set_when_delta_exceeds_four_seconds(meta, monkeypatch):
-    # Use a very high silence threshold so Stage 3 never finds silence (t_exact = t_approx)
-    # and manually check is_outlier behaviour via a different approach:
-    # patch _detect_silence to simulate a >4s shift.
     import pipeline.analyzer as analyzer
 
     def fake_silence(audio_path, t_approx, threshold_dbfs):
@@ -158,7 +164,7 @@ def test_outlier_flag_set_when_delta_exceeds_four_seconds(meta, monkeypatch):
     monkeypatch.setattr(analyzer, "_detect_silence", fake_silence)
 
     def disclaimer(transcript: str):
-        return AnchorWord(word="domain", confidence=0.99)
+        return AnchorWord(index=_last_index_of("domain", transcript), confidence=0.99)
 
     result = run_pipeline(FIXTURE, meta, detector=disclaimer)
     assert result.is_outlier is True

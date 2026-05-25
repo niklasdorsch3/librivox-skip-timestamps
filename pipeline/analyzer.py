@@ -10,7 +10,7 @@ from typing import Callable, Optional
 from faster_whisper import WhisperModel
 from pydub import AudioSegment
 
-from pipeline.boundary_detector import AnchorWord, BoundaryResult, NoDisclaimer, detect_boundary
+from pipeline.boundary_detector import AnchorWord, BoundaryResult, NoDisclaimer, build_indexed_transcript, detect_boundary
 
 logger = logging.getLogger(__name__)
 
@@ -68,10 +68,10 @@ def run_pipeline(
 
     # Stage 1: Transcription
     token_map = _transcribe(audio_path, whisper_model)
-    transcript = " ".join(word for word, _ in token_map)
 
     # Stage 2: Boundary Analysis
-    boundary = detector(transcript)
+    indexed_transcript = build_indexed_transcript(token_map)
+    boundary = detector(indexed_transcript)
 
     if isinstance(boundary, NoDisclaimer) or (
         isinstance(boundary, AnchorWord) and boundary.confidence < confidence_threshold
@@ -82,17 +82,13 @@ def run_pipeline(
             is_outlier=False,
         )
 
-    # AnchorWord with sufficient confidence — look up in token map
-    anchor_key = _normalize(boundary.word)
-    t_approx: float | None = None
-    for word, end_time in token_map:
-        if _normalize(word) == anchor_key:
-            t_approx = end_time
-
-    if t_approx is None:
+    # AnchorWord with sufficient confidence — direct index lookup into token map
+    if boundary.index >= len(token_map):
         raise AnchorWordNotFoundError(
-            f"Anchor word '{boundary.word}' not found in Token Map"
+            f"Anchor index {boundary.index} out of range (token map has {len(token_map)} tokens)"
         )
+    _raw_anchor, t_approx = token_map[boundary.index]
+    anchor_word_text = re.sub(r"[^a-zA-Z0-9]", "", _raw_anchor)
 
     # Stage 2b: if a chapter heading follows, find where audio resumes in the gap
     t_chapter_end = _find_chapter_heading_end(token_map, t_approx)
@@ -115,7 +111,7 @@ def run_pipeline(
 
     return PipelineResult(
         exact_audio_skip_seconds=t_exact,
-        detected_disclaimer_anchor_word=boundary.word,
+        detected_disclaimer_anchor_word=anchor_word_text,
         is_outlier=is_outlier,
     )
 

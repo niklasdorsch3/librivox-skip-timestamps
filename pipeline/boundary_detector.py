@@ -14,8 +14,9 @@ DEFAULT_OPENAI_API_BASE = "https://api.groq.com/openai/v1"
 DEFAULT_OPENAI_MODEL = "llama-3.1-8b-instant"
 
 _SYSTEM_PROMPT = (
-    "You are analyzing a LibriVox audiobook transcript. LibriVox chapters begin with a "
-    "standard spoken disclaimer that follows this pattern:\n"
+    "You are analyzing a LibriVox audiobook transcript where every word is prefixed with "
+    "its zero-based index in square brackets, e.g. [0]This [1]is [2]a [3]LibriVox...\n\n"
+    "LibriVox chapters begin with a standard spoken disclaimer:\n"
     "  'This is a LibriVox recording. All LibriVox recordings are in the public domain. "
     "For more information, please visit LibriVox.org. "
     "[Title] by [Author], [chapter info], read by [Reader Name].'\n\n"
@@ -23,23 +24,23 @@ _SYSTEM_PROMPT = (
     "very last word. It does NOT include the chapter heading (e.g. 'Chapter 1') or any "
     "book text.\n\n"
     "IMPORTANT RULES:\n"
-    "1. When the phrase 'read by [Name]' appears, the anchor word is ALWAYS the reader's "
-    "last name (or the final word of their name). Never return 'org', 'domain', or any "
-    "other word if a reader name is present.\n"
-    "2. Only return 'org' or 'domain' if there is NO 'read by [Name]' phrase anywhere in "
-    "the transcript.\n\n"
+    "1. When 'read by [Name]' appears, return the index of the reader's last name "
+    "(the final word of their name). Never return the index of 'org', 'domain', or any "
+    "word before the reader's name if a reader name is present.\n"
+    "2. Only return the index of 'org' or 'domain' if there is NO 'read by [Name]' phrase "
+    "anywhere in the transcript.\n\n"
     "Example — single chapter:\n"
-    "  Transcript: '...please visit LibriVox.org. Pride and Prejudice by Jane Austen. "
-    "Chapter 1. Read by Mary Jones.'\n"
-    "  Correct response: {\"disclaimer_end_word\": \"Jones\", \"confidence_score\": 0.99}\n\n"
+    "  Transcript: '...[4]please [5]visit [6]LibriVox.org. [7]Pride ... [14]Read [15]by "
+    "[16]Mary [17]Jones. [18]Chapter ...'\n"
+    "  Correct response: {\"disclaimer_end_index\": 17, \"confidence_score\": 0.99}\n\n"
     "Example — multi-chapter file:\n"
-    "  Transcript: '...please visit LibriVox.org. Pride and Prejudice by Jane Austen. "
-    "Chapters 4 and 5. Read by Mary Jones.'\n"
-    "  Correct response: {\"disclaimer_end_word\": \"Jones\", \"confidence_score\": 0.99}\n\n"
+    "  Transcript: '...[4]please [5]visit [6]LibriVox.org. [7]Pride ... [13]Chapters "
+    "[14]4 [15]and [16]5. [17]Read [18]by [19]Mary [20]Jones. [21]Chapter ...'\n"
+    "  Correct response: {\"disclaimer_end_index\": 20, \"confidence_score\": 0.99}\n\n"
     "Respond ONLY with a JSON object in this exact format:\n"
-    '{"disclaimer_end_word": "lastword", "confidence_score": 0.95}\n\n'
+    '{"disclaimer_end_index": 17, "confidence_score": 0.95}\n\n'
     "If there is no disclaimer present, respond with:\n"
-    '{"disclaimer_end_word": null, "confidence_score": 1.0}'
+    '{"disclaimer_end_index": null, "confidence_score": 1.0}'
 )
 
 
@@ -50,9 +51,9 @@ class NoDisclaimer:
 
 @dataclass
 class AnchorWord:
-    """LLM identified the last word of the Disclaimer."""
+    """LLM identified the last word of the Disclaimer by its token-map index."""
 
-    word: str
+    index: int
     confidence: float
 
 
@@ -68,6 +69,8 @@ def detect_boundary(
     session: requests.Session | None = None,
 ) -> BoundaryResult:
     """Return where the Disclaimer ends, or NoDisclaimer if none is present.
+
+    The transcript must be an indexed string produced by build_indexed_transcript().
 
     Uses an OpenAI-compatible API (e.g. Groq) when OPENAI_API_KEY is set,
     otherwise falls back to a local Ollama instance.
@@ -98,6 +101,11 @@ def detect_boundary(
             )
 
     return _parse(data)
+
+
+def build_indexed_transcript(token_map: list[tuple[str, float]]) -> str:
+    """Produce '[0]word1 [1]word2 ...' from a token map for the LLM prompt."""
+    return " ".join(f"[{i}]{word}" for i, (word, _) in enumerate(token_map))
 
 
 def _call_openai(transcript: str, session: requests.Session, api_key: str) -> str:
@@ -140,8 +148,8 @@ def _call_ollama(transcript: str, model: str, session: requests.Session) -> str:
 
 
 def _parse(data: dict) -> BoundaryResult:
-    word = data.get("disclaimer_end_word")
+    index = data.get("disclaimer_end_index")
     confidence = float(data.get("confidence_score", 1.0))
-    if word is None:
+    if index is None:
         return NoDisclaimer()
-    return AnchorWord(word=word, confidence=confidence)
+    return AnchorWord(index=int(index), confidence=confidence)
